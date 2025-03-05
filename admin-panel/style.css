@@ -1,0 +1,22 @@
+body {
+    font-family: sans-serif;
+}
+
+.content-section {
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+.navbar{
+    margin-bottom: 3rem;
+}
+
+.szerkesztes-gomb,
+.torles-gomb {
+  margin-right: 5px;
+}
+
+.rejtett-adat{
+    display: none;
+}
