@@ -1,3 +1,16 @@
+mod event;
+mod table;
+mod db;
+
+use event::*;
+use db::DB;
+
+use rocket::*;
+
 fn main() {
-    println!("Hello, world!");
+    let db = DB::new();
+    let events = db.read();
+    for event in events {
+        println!("{:?}", event);
+    }
 }
