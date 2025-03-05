@@ -36,7 +36,7 @@
             <h1>Események kezelése</h1>
             <button id="newEventBtn" class="btn btn-primary mb-3">Új esemény</button>
 
-            <table class="table table-striped table-bordered" id="esemenyekTabla">
+            <table class="table table-striped table-bordered" id="eventsTable">
                 <thead>
                     <tr>
                         <th>Név</th>
@@ -47,7 +47,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
+                    <!-- <tr>
                         <td><input type="text" class="form-control event-data" data-field="name" value="Táncpróba" readonly></td>
                         <td><input type="text" class="form-control event-data" data-field="date" value="2024-03-15" readonly></td>
                         <td><input type="text" class="form-control event-data" data-field="location" value="Iskola aula" readonly></td>
@@ -66,7 +66,7 @@
                             <button class="btn btn-primary btn-sm edit-button" id="edit-event-btn-2">Szerkesztés</button>
                             <button class="btn btn-danger btn-sm delete-button" id="delete-event-btn-2">Törlés</button>
                         </td>
-                    </tr>
+                    </tr> -->
 
                 </tbody>
             </table>
