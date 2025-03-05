@@ -68,10 +68,10 @@ $(document).ready(function () {
     $('#newEventBtn').click(showNewEventModal);
     $('#saveNewEventBtn').click(handleSaveNewEvent);
     loadEvents();
-    setupEventDelegation(); 
+    setupEventDelegation();
 
     function handleEditClick() {
-      let row = $(this).closest('tr');
+        let row = $(this).closest('tr');
 
         if ($(this).text() === 'Szerkesztés') {
             startEditing(row);
@@ -81,7 +81,7 @@ $(document).ready(function () {
     }
 
     function startEditing(row) {
-      row.find('input.event-data').removeAttr('readonly');
+        row.find('input.event-data').removeAttr('readonly');
         row.find('.edit-button').text('Mentés');
 
         let cancelBtn = $('<button class="btn btn-secondary btn-sm cancel-button">Mégse</button>');
@@ -92,10 +92,30 @@ $(document).ready(function () {
             $(this).data('original-value', $(this).val());
         });
     }
-     function finishEditing(row) {
-        row.find('input.event-data').attr('readonly', true);
-        row.find('.edit-button').text('Szerkesztés');
-        row.find('.cancel-button').remove();
+    function finishEditing(row) {
+        // Get the updated data from the input fields
+        let updatedData = {
+            name: row.find('input[data-field="name"]').val(),
+            date: row.find('input[data-field="date"]').val(),
+            location: row.find('input[data-field="location"]').val(),
+            loadLevel: row.find('input[data-field="loadLevel"]').val()
+        };
+
+        // Get the event ID from the hidden span
+        let eventId = parseInt(row.find('.event-id').text(), 10);
+
+        // Update the event in the container
+        if (eventContainer.updateEvent(eventId, updatedData)) {
+            console.log("Event updated in container.  Ready to save to server:", eventId, updatedData);
+             //TODO: Make AJAX call for update
+            row.find('input.event-data').attr('readonly', true);
+            row.find('.edit-button').text('Szerkesztés');
+            row.find('.cancel-button').remove();
+        } else {
+            console.error("Event with ID " + eventId + " not found for update."); // Handle error
+            alert("Event with ID " + eventId + " not found for update.");
+        }
+
     }
 
     function handleCancelClick() {
@@ -108,9 +128,9 @@ $(document).ready(function () {
     }
 
     function handleDeleteClick() {
-      let row = $(this).closest('tr');
+        let row = $(this).closest('tr');
         if (confirm('Biztosan törölni szeretnéd?')) {
-            row.remove();  //TODO: Placeholder for now.  Later, add AJAX.
+            row.remove();  //TODO: AJAX Delete event
         }
     }
 
@@ -119,7 +139,7 @@ $(document).ready(function () {
         $('#newEventModal').modal('show');
     }
 
-     function handleSaveNewEvent() {
+    function handleSaveNewEvent() {
         let eventData = {
             name: $('#eventName').val(),
             date: $('#eventDate').val(),
@@ -141,19 +161,19 @@ $(document).ready(function () {
 
     function loadEvents() {
         $('#eventsTable tbody').empty();
-        eventContainer.getAllEvents().forEach(function(event) {
+        eventContainer.getAllEvents().forEach(function (event) {
             addEventRow(event);
         });
 
     }
 
-      function addEventRow(event) {
+    function addEventRow(event) {
         let row = $('<tr>');
         let nameInput = $('<input type="text" class="form-control event-data" data-field="name" readonly>').val(event.name);
         let dateInput = $('<input type="text" class="form-control event-data" data-field="date" readonly>').val(event.date);
         let locationInput = $('<input type="text" class="form-control event-data" data-field="location" readonly>').val(event.location);
         let loadLevelInput = $('<input type="text" class="form-control event-data" data-field="loadLevel" readonly>').val(event.loadLevel);
-         let hiddenIdCell = $('<td class="hidden-data">').append($('<span class="event-id">' + event.id + '</span>'));
+        let hiddenIdCell = $('<td hidden>').append($('<span class="event-id">' + event.id + '</span>'));
         row.append(hiddenIdCell);
         row.append($('<td>').append(nameInput));
         row.append($('<td>').append(dateInput));
@@ -172,7 +192,7 @@ $(document).ready(function () {
     function addNewEvent(eventData) {
         //Find next available ID
         let maxId = 0;
-         eventContainer.getAllEvents().forEach(function(event) {
+        eventContainer.getAllEvents().forEach(function (event) {
             if (event.id > maxId) {
                 maxId = event.id;
             }
@@ -183,10 +203,12 @@ $(document).ready(function () {
         addEventRow(newEvent); // Add to DOM
         $('#newEventModal').modal('hide');
         $('#newEventForm')[0].reset();
+
+        //TODO: Send AJAX for new event
         alert("Esemény sikeresen hozzáadva");
     }
 
-      function setupEventDelegation() {
+    function setupEventDelegation() {
         $('#eventsTable tbody').on('click', '.edit-button', handleEditClick);
         $('#eventsTable tbody').on('click', '.cancel-button', handleCancelClick);
         $('#eventsTable tbody').on('click', '.delete-button', handleDeleteClick);
