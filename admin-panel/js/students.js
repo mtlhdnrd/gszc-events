@@ -296,11 +296,9 @@ $(document).ready(function() {
     }
       function loadOccupationsIntoSelect() { //from occupations.js
         let options = '<option value="">Válassz foglalkozást</option>';
-        console.log(occupationContainer.getAllOccupations());
         occupationContainer.getAllOccupations().forEach(occupation => {
             options += `<option value="${occupation.id}">${occupation.name}</option>`;
         });
-        console.log(options);
         $('#occupationSelectStudent').html(options);
     }
 

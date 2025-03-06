@@ -54,8 +54,7 @@ class EventContainer {
         return false; // Indicate event not found
     }
 }
-const eventContainer = new EventContainer();
-
+var eventContainer = new EventContainer();
 const event1 = new Event(1, "Dance Rehearsal", "2024-03-15", "School Hall", "high");
 const event2 = new Event(2, "Poetry Slam", "2024-03-22", "Gym", "low");
 eventContainer.addEvent(event1);
@@ -213,4 +212,9 @@ $(document).ready(function () {
         $('#eventsTable tbody').on('click', '.cancel-button', handleCancelClick);
         $('#eventsTable tbody').on('click', '.delete-button', handleDeleteClick);
     }
+    return {
+        EventContainer: EventContainer, // Export the *class* itself
+        Event: Event,
+        eventContainer: eventContainer
+    };
 });

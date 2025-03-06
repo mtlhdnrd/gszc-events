@@ -311,7 +311,11 @@ $(document).ready(function() {
     }
     return {
         Occupation: Occupation,
-        OccupationContainer: OccupationContainer
-    };
+        OccupationContainer: OccupationContainer,
+        occupationContainer: occupationContainer,
+        EventOccupation: EventOccupation,
+        EventOccupationContainer: EventOccupationContainer,
+        eventOccupationContainer: eventOccupationContainer
+        };
 });
 

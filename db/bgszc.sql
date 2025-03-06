@@ -1,84 +1,90 @@
-CREATE DATABASE IF NOT EXISTS lol_bgszc;
+CREATE DATABASE IF NOT EXISTS bgszc_events;
 
-USE lol_bgszc;
+USE bgszc_events;
 
-CREATE TABLE iskola (
-    iskola_id INT PRIMARY KEY AUTO_INCREMENT,
-    nev VARCHAR(255) NOT NULL,
-    cim VARCHAR(255) NOT NULL
+CREATE TABLE school (
+    `school_id` INT PRIMARY KEY AUTO_INCREMENT,
+    `name` VARCHAR(255) NOT NULL,
+    `address` VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE osztalyfonok (
-    osztalyfonok_id INT PRIMARY KEY AUTO_INCREMENT,
-    nev VARCHAR(255) NOT NULL,
-    email VARCHAR(130) NOT NULL,
-    telefon VARCHAR(20) NOT NULL
+CREATE TABLE teacher (
+    `teacher_id` INT PRIMARY KEY AUTO_INCREMENT,
+    `name` VARCHAR(255) NOT NULL,
+    `email` VARCHAR(130) NOT NULL,
+    `phone` VARCHAR(20) NOT NULL
 );
 
-CREATE TABLE diak (
-    diak_id INT PRIMARY KEY AUTO_INCREMENT,
-    felhasznalonev VARCHAR(255) UNIQUE NOT NULL,
-    jelszo VARCHAR(255) NOT NULL, -- Titkosítva!
-    nev VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    osztalyfonok_id INT,
-    iskola_id INT,
-    ossz_ledolgozott_orak INT DEFAULT 0,
-    FOREIGN KEY (osztalyfonok_id) REFERENCES osztalyfonok(osztalyfonok_id),
-    FOREIGN KEY (iskola_id) REFERENCES iskola(iskola_id)
+CREATE TABLE user (
+    `user_id` INT PRIMARY KEY AUTO_INCREMENT,
+    `username` VARCHAR(255) UNIQUE NOT NULL,
+    `password` VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE student (
+    `user_id` INT PRIMARY KEY NOT NULL,
+    `name` VARCHAR(255) NOT NULL,
+    `email` VARCHAR(255) UNIQUE NOT NULL,
+    `teacher_id` INT NOT NULL,
+    `school_id` INT NOT NULL,
+    `total_hours_worked` INT DEFAULT 0,
+    FOREIGN KEY (`teacher_id`) REFERENCES teacher(`teacher_id`),
+    FOREIGN KEY (`school_id`) REFERENCES school(`school_id`),
+    FOREIGN KEY (`user_id`) REFERENCES user(`user_id`)
 );
 
 CREATE TABLE admin (
-    admin_id INT PRIMARY KEY AUTO_INCREMENT,
-    felhasznalonev VARCHAR(255) UNIQUE NOT NULL,
-    jelszo VARCHAR(255) NOT NULL  -- Titkosítva!
+    `user_id` INT PRIMARY KEY NOT NULL,
+    FOREIGN KEY (`user_id`) REFERENCES user(`user_id`)
 );
 
-CREATE TABLE esemeny (
-    esemeny_id INT PRIMARY KEY AUTO_INCREMENT,
-    datum DATE NOT NULL,
-    helyszin VARCHAR(255) NOT NULL,
-    terheltseg ENUM('alacsony', 'magas') NOT NULL
+CREATE TABLE event (
+    `event_id` INT PRIMARY KEY AUTO_INCREMENT,
+    `name` VARCHAR(255) NOT NULL,
+    `date` DATE NOT NULL,
+    `location` VARCHAR(255) NOT NULL,
+    `busyness` ENUM('low', 'high') NOT NULL
 );
 
-CREATE TABLE foglalkozas (
-    foglalkozas_id INT PRIMARY KEY AUTO_INCREMENT,
-    nev VARCHAR(130) NOT NULL,
-    leiras VARCHAR(255)
+-- the name workshop doesn't ring quite right, but I can't think of a better one
+CREATE TABLE workshop (
+    `workshop_id` INT PRIMARY KEY AUTO_INCREMENT,
+    `name` VARCHAR(130) NOT NULL,
+    `description` VARCHAR(255)
 );
 
-CREATE TABLE esemeny_foglalkozas (
-    esemeny_foglalkozas_id INT PRIMARY KEY AUTO_INCREMENT,
-    esemeny_id INT,
-    foglalkozas_id INT,
-    teljesitheto_orak_szama INT NOT NULL,
-    szukseges_mentor_szam INT NOT NULL,
-    FOREIGN KEY (esemeny_id) REFERENCES esemeny(esemeny_id),
-    FOREIGN KEY (foglalkozas_id) REFERENCES foglalkozas(foglalkozas_id)
+CREATE TABLE event_workshop (
+    `event_workshop_id` INT PRIMARY KEY AUTO_INCREMENT,
+    `event_id` INT,
+    `workshop_id` INT,
+    `max_workable_hours` INT NOT NULL,
+    `number_of_mentors_required` INT NOT NULL,
+    FOREIGN KEY (`event_id`) REFERENCES event(`event_id`),
+    FOREIGN KEY (`workshop_id`) REFERENCES workshop(`workshop_id`)
 );
 
-CREATE TABLE mentor_foglalkozasok (
-    mentor_foglalkozas_id INT PRIMARY KEY AUTO_INCREMENT,
-    diak_id INT,
-    foglalkozas_id INT,
-    FOREIGN KEY (diak_id) REFERENCES diak(diak_id),
-    FOREIGN KEY (foglalkozas_id) REFERENCES foglalkozas(foglalkozas_id)
+CREATE TABLE mentor_workshops (
+    `mentor_workshop_id` INT PRIMARY KEY AUTO_INCREMENT,
+    `user_id` INT,
+    `workshop_id` INT,
+    FOREIGN KEY (`user_id`) REFERENCES student(`user_id`),
+    FOREIGN KEY (`workshop_id`) REFERENCES workshop(`workshop_id`)
 );
 
-CREATE TABLE rangsor (
-    rangsor_id INT PRIMARY KEY AUTO_INCREMENT,
-    esemeny_foglalkozas_id INT,
-    diak_id INT,
-    rangsor_szam INT NOT NULL,
-    FOREIGN KEY (esemeny_foglalkozas_id) REFERENCES esemeny_foglalkozas(esemeny_foglalkozas_id),
-    FOREIGN KEY (diak_id) REFERENCES diak(diak_id)
+CREATE TABLE ranking (
+    `ranking_id` INT PRIMARY KEY AUTO_INCREMENT,
+    `event_workshop_id` INT,
+    `user_id` INT,
+    `ranking_number` INT NOT NULL,
+    FOREIGN KEY (`event_workshop_id`) REFERENCES event_workshop(`event_workshop_id`),
+    FOREIGN KEY (`user_id`) REFERENCES student(`user_id`)
 );
 
-CREATE TABLE reszvetelnaplo (
-    reszvetel_id INT PRIMARY KEY AUTO_INCREMENT,
-    diak_id INT,
-    esemeny_foglalkozas_id INT,
-    megjegyzes TEXT,
-    FOREIGN KEY (diak_id) REFERENCES diak(diak_id),
-    FOREIGN KEY (esemeny_foglalkozas_id) REFERENCES esemeny_foglalkozas(esemeny_foglalkozas_id)
+CREATE TABLE attendance_sheet (
+    `attendance_id` INT PRIMARY KEY AUTO_INCREMENT,
+    `user_id` INT,
+    `event_workshop_id` INT,
+    `note` TEXT,
+    FOREIGN KEY (`user_id`) REFERENCES student(`user_id`),
+    FOREIGN KEY (`event_workshop_id`) REFERENCES event_workshop(`event_workshop_id`)
 );
