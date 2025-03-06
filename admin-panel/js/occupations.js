@@ -309,4 +309,9 @@ $(document).ready(function() {
         //TODO: Add ajax
 
     }
+    return {
+        Occupation: Occupation,
+        OccupationContainer: OccupationContainer
+    };
 });
+
