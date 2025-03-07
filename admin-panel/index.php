@@ -137,7 +137,7 @@
                 </div>
                 <div class="form-group">
                     <label for="occupationSelect">Foglalkozás:</label>
-                    <select class="form-control" id="occupationSelect">
+                    <select class="form-control" id="occupationSelectEvent">
                         <option value="">Válassz foglalkozást</option>
                         <!-- Occupations will be loaded here -->
                     </select>

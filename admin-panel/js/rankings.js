@@ -1,9 +1,10 @@
 
+
 // --- Ranking Class and Container ---
 class Ranking {
-    constructor(eventId, occupationId, studentUsername, rankingNumber) {
-        this.eventId = eventId;
-        this.occupationId = occupationId;
+    constructor(rankingId, eventOccupationId, studentUsername, rankingNumber) {
+        this.rankingId = rankingId;       // Added rankingId
+        this.eventOccupationId = eventOccupationId; // Added eventOccupationId
         this.studentUsername = studentUsername;
         this.rankingNumber = rankingNumber;
     }
@@ -21,13 +22,13 @@ class RankingContainer {
         this.rankings.push(ranking);
     }
 
-    getRankingsByEventAndOccupation(eventId, occupationId) {
-        return this.rankings.filter(ranking => ranking.eventId === eventId && ranking.occupationId === occupationId);
+    getRankingsByEventOccupation(eventOccupationId) { // Changed to use eventOccupationId
+        return this.rankings.filter(ranking => ranking.eventOccupationId === eventOccupationId);
     }
 
-    removeRanking(eventId, occupationId, studentUsername) {
+    removeRanking(rankingId) { // Changed to use rankingId
         const initialLength = this.rankings.length;
-        this.rankings = this.rankings.filter(ranking => !(ranking.eventId === eventId && ranking.occupationId === occupationId && ranking.studentUsername === studentUsername));
+        this.rankings = this.rankings.filter(ranking => ranking.rankingId !== rankingId);
         return this.rankings.length < initialLength;
     }
 }
@@ -44,6 +45,7 @@ $(document).ready(function() {
     $('#addEventSelectRanking').change(updateAddOccupationDropdown);
 
     // --- Load Initial Data (Placeholder) ---
+
     loadEventsIntoSelect("#eventSelectRanking");
     loadEventsIntoSelect("#addEventSelectRanking");
     updateOccupationDropdown(); //call for placeholder
@@ -59,21 +61,34 @@ $(document).ready(function() {
             return;
         }
 
-        let rankings = rankingContainer.getRankingsByEventAndOccupation(eventId, occupationId);
+        // Find the EventOccupation object (you need this for the ID)
+        let eventOccupation = eventOccupationContainer.getAllEventOccupations().find(eo => eo.eventId === eventId && eo.occupationId === occupationId);
+
+        if (!eventOccupation) {
+            alert('Nincs hozzárendelve foglalkozás ehhez az eseményhez.');
+            return;
+        }
+
+        let eventOccupationId = eventOccupation.eventOccupationId;
+
+        // Get rankings by eventOccupationId
+        let rankings = rankingContainer.getRankingsByEventOccupation(eventOccupationId);
 
         $('#rankingsTable tbody').empty();
-
         rankings.forEach(ranking => {
             addRankingRow(ranking);
         });
     }
 
+
     function addRankingRow(ranking) {
         let row = $('<tr>');
+        // You *could* add a hidden <td> for rankingId here, similar to other tables
         row.append($('<td>').text(ranking.studentUsername));
         row.append($('<td>').text(ranking.rankingNumber));
         $('#rankingsTable tbody').append(row);
     }
+
 
      function updateOccupationDropdown() {
         let eventId = parseInt($(this).val(), 10);
@@ -120,16 +135,31 @@ $(document).ready(function() {
             alert('Kérlek válassz eseményt, foglalkozást, add meg a diák felhasználónevét, és egy érvényes sorszámot!');
             return;
         }
-        if(rankingNumber <= 0){
-            alert("A sorszám egy 0-nál nagyobb szám kell, hogy legyen!");
+
+        // Get eventOccupationId
+        let eventOccupation = eventOccupationContainer.getAllEventOccupations().find(eo => eo.eventId === eventId && eo.occupationId === occupationId);
+        if(!eventOccupation){
+            alert("Nincs ilyen esemény-foglalkozás hozzárendelés!");
             return;
         }
-        const newRanking = new Ranking(eventId, occupationId, studentUsername, rankingNumber);
+        let eventOccupationId = eventOccupation.eventOccupationId;
 
+        // Find the next available rankingId (similar to how you handle other IDs)
+        let maxId = 0;
+        rankingContainer.rankings.forEach(ranking => {
+            if (ranking.rankingId > maxId) {  // Use rankingId here
+                maxId = ranking.rankingId;
+            }
+        });
+        let newRankingId = maxId + 1;
+
+        const newRanking = new Ranking(newRankingId, eventOccupationId, studentUsername, rankingNumber);
         rankingContainer.addRanking(newRanking);
 
-        alert("Rangsor hozzáadva! (Replace with AJAX)");
+        alert("Rangsor hozzáadva! (Replace with AJAX)");  // Replace with AJAX
         // TODO: AJAX call to php/add_rangsor.php
+
+        // Clear form (optional)
         $('#addEventSelectRanking').val('');
         $('#addOccupationSelectRanking').val('');
         $('#studentUsernameRanking').val('');
