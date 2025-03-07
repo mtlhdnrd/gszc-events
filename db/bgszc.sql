@@ -43,6 +43,7 @@ CREATE TABLE event (
     `name` VARCHAR(255) NOT NULL,
     `date` DATE NOT NULL,
     `location` VARCHAR(255) NOT NULL,
+    `status` VARCHAR(255) NOT NULL, -- pending/ready/failed (based on if enough people accepted it or not)
     `busyness` ENUM('low', 'high') NOT NULL
 );
 
@@ -63,7 +64,8 @@ CREATE TABLE event_workshop (
     FOREIGN KEY (`workshop_id`) REFERENCES workshop(`workshop_id`)
 );
 
-CREATE TABLE mentor_workshops (
+--Diak foglalkozas
+CREATE TABLE mentor_workshops ( 
     `mentor_workshop_id` INT PRIMARY KEY AUTO_INCREMENT,
     `user_id` INT,
     `workshop_id` INT,
@@ -78,6 +80,14 @@ CREATE TABLE ranking (
     `ranking_number` INT NOT NULL,
     FOREIGN KEY (`event_workshop_id`) REFERENCES event_workshop(`event_workshop_id`),
     FOREIGN KEY (`user_id`) REFERENCES student(`user_id`)
+);
+
+--Diak meghivo -> egy darab meghívó a diák részére
+CREATE TABLE student_invitation(
+    `invitation_id` INT PRIMARY KEY AUTO_INCREMENT,
+    `event_workshop_id` INT,
+    `user_id` INT,
+    `status` VARCHAR(50) --pending/accepted/refused/re-accepted
 );
 
 CREATE TABLE attendance_sheet (

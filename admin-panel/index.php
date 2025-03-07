@@ -52,6 +52,7 @@
                         <th>Dátum</th>
                         <th>Helyszín</th>
                         <th>Terheltség</th>
+                        <th>Státusz</th>
                         <th>Műveletek</th>
                     </tr>
                 </thead>
@@ -88,6 +89,14 @@
                                     <select class="form-control" id="eventLoadLevel" name="eventLoadLevel">
                                         <option value="magas">Magas</option>
                                         <option value="alacsony">Alacsony</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="eventStatus">Státusz:</label>
+                                    <select class="form-control" id="eventStatus" name="eventStatus">
+                                        <option value="pending">Függőben</option>
+                                        <option value="ready">Kész</option>
+                                        <option value="failed">Sikertelen</option>
                                     </select>
                                 </div>
                             </form>
@@ -332,7 +341,8 @@
             </table>
 
             <!-- Modal for New Head Teacher -->
-            <div class="modal fade" id="newHeadTeacherModal" tabindex="-1" role="dialog" aria-labelledby="newHeadTeacherModalLabel" aria-hidden="true">
+            <div class="modal fade" id="newHeadTeacherModal" tabindex="-1" role="dialog"
+                aria-labelledby="newHeadTeacherModalLabel" aria-hidden="true">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -349,11 +359,13 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="headTeacherEmail">Email:</label>
-                                    <input type="email" class="form-control" id="headTeacherEmail" name="headTeacherEmail">
+                                    <input type="email" class="form-control" id="headTeacherEmail"
+                                        name="headTeacherEmail">
                                 </div>
                                 <div class="form-group">
                                     <label for="headTeacherPhoneNumber">Telefonszám:</label>
-                                    <input type="text" class="form-control" id="headTeacherPhoneNumber" name="headTeacherPhoneNumber">
+                                    <input type="text" class="form-control" id="headTeacherPhoneNumber"
+                                        name="headTeacherPhoneNumber">
                                 </div>
                             </form>
                         </div>

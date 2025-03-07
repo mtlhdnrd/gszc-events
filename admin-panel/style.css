@@ -20,3 +20,15 @@ body {
 .rejtett-adat{
     display: none;
 }
+
+.status-pending {
+    background-color: #ffecb3; 
+}
+
+.status-ready {
+    background-color: #c8e6c9;
+}
+
+.status-failed {
+    background-color: #ffcdd2;
+}
