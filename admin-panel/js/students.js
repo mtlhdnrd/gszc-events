@@ -3,7 +3,7 @@ class Student {
     constructor(id, username, password, name, email, headTeacherName, schoolName, schoolId, totalHoursWorked) {
         this.id = id;
         this.username = username;
-        this.password = password; 
+        this.password = password;
         this.name = name;
         this.email = email;
         this.headTeacherName = headTeacherName;
@@ -13,7 +13,7 @@ class Student {
     }
     update(newData) {
         if (newData.username) this.username = newData.username;
-        if (newData.password) this.password = newData.password; 
+        if (newData.password) this.password = newData.password;
         if (newData.name) this.name = newData.name;
         if (newData.email) this.email = newData.email;
         if (newData.headTeacherName) this.headTeacherName = newData.headTeacherName;
@@ -59,10 +59,16 @@ class StudentContainer {
 }
 // --- HeadTeacher Class and Container ---
 class HeadTeacher {
-    constructor(id, name, email) {
+    constructor(id, name, email, phone) {
         this.id = id;
         this.name = name;
         this.email = email;
+        this.phone = phone;
+    }
+    update(newData) {
+        if (newData.name) this.name = newData.name;
+        if (newData.email) this.email = newData.email;
+        if(newData.phone) this.phone = newData.phone;
     }
 }
 class HeadTeacherContainer {
@@ -81,6 +87,19 @@ class HeadTeacherContainer {
     }
     getHeadTeacherById(id) {
         return this.headTeachers.find(ht => ht.id === id);
+    }
+    updateHeadTeacher(id, newData) {
+        const headTeacher = this.getHeadTeacherById(id);
+        if (headTeacher) {
+            headTeacher.update(newData);
+            return true;
+        }
+        return false;
+    }
+    removeHeadTeacherById(id) {
+        const initialLength = this.headTeachers.length;
+        this.headTeachers = this.headTeachers.filter(headTeacher => headTeacher.id !== id);
+        return this.headTeachers.length < initialLength;
     }
 }
 
@@ -110,9 +129,9 @@ class StudentOccupationContainer {
         return this.studentOccupations;
     }
     removeStudentOccupation(studentId, occupationId) {
-         const initialLength = this.studentOccupations.length;
+        const initialLength = this.studentOccupations.length;
         this.studentOccupations = this.studentOccupations.filter(so => !(so.studentId === studentId && so.occupationId === occupationId));
-         return this.studentOccupations.length < initialLength;
+        return this.studentOccupations.length < initialLength;
     }
 }
 
@@ -122,7 +141,7 @@ const studentContainer = new StudentContainer();
 const headTeacherContainer = new HeadTeacherContainer();
 const studentOccupationContainer = new StudentOccupationContainer();
 
-$(document).ready(function() {
+$(document).ready(function () {
     // --- Event Handlers ---
     $('#studentsTable tbody').on('click', '.edit-button', handleEditStudentClick);
     $('#studentsTable tbody').on('click', '.cancel-button', handleCancelStudentClick);
@@ -141,7 +160,7 @@ $(document).ready(function() {
     // --- Function Definitions ---
     //--Student CRUD--
     function handleEditStudentClick() {
-         let row = $(this).closest('tr');
+        let row = $(this).closest('tr');
         if ($(this).text() === 'Szerkesztés') {
             startEditingStudent(row);
         } else {
@@ -158,13 +177,13 @@ $(document).ready(function() {
         let cancelBtn = $('<button class="btn btn-secondary btn-sm cancel-button">Mégse</button>');
         row.find('.edit-button').after(cancelBtn);
 
-        row.find('input.student-data, select.head-teacher-select').each(function() {
+        row.find('input.student-data, select.head-teacher-select').each(function () {
             $(this).data('original-value', $(this).val());
         });
     }
 
     function finishEditingStudent(row) {
-         let updatedData = { //get data
+        let updatedData = { //get data
             username: row.find('input[data-field="username"]').val(),
             password: row.find('input[data-field="password"]').val(), // Hash this on the server!
             name: row.find('input[data-field="name"]').val(),
@@ -177,7 +196,7 @@ $(document).ready(function() {
         let studentId = parseInt(row.find('.student-id').text(), 10);
 
         if (studentContainer.updateStudent(studentId, updatedData)) {
-             console.log("Student updated in container. Ready to save to server:", studentId, updatedData);
+            console.log("Student updated in container. Ready to save to server:", studentId, updatedData);
             alert("Student updated! (Replace this with AJAX)"); // Replace with AJAX call
             //TODO: Add ajax
 
@@ -194,35 +213,35 @@ $(document).ready(function() {
 
     function handleCancelStudentClick() {
         let row = $(this).closest('tr');
-        row.find('input.student-data, select.head-teacher-select').each(function() {
+        row.find('input.student-data, select.head-teacher-select').each(function () {
             $(this).val($(this).data('original-value')).attr('readonly', true);
-             row.find('.head-teacher-select').prop('disabled', true);
+            row.find('.head-teacher-select').prop('disabled', true);
         });
         $(this).remove();
         row.find('.edit-button').text('Szerkesztés');
     }
 
     function handleDeleteStudentClick() {
-         let row = $(this).closest('tr');
+        let row = $(this).closest('tr');
         if (confirm('Biztosan törölni szeretnéd?')) {
             let studentId = parseInt(row.find('.student-id').text(), 10);
-            if(studentContainer.removeStudentById(studentId)){
+            if (studentContainer.removeStudentById(studentId)) {
                 row.remove();
-                 alert("Student removed! (Replace this with AJAX)"); // Replace with AJAX call
-                 //TODO: Add ajax
+                alert("Student removed! (Replace this with AJAX)"); // Replace with AJAX call
+                //TODO: Add ajax
             } else {
-                 console.error("Student with ID " + studentId + " not found for deletion.");
+                console.error("Student with ID " + studentId + " not found for deletion.");
             }
         }
     }
     //--Modal functions--
     function showNewStudentModal() {
-         $('#newStudentForm')[0].reset();
+        $('#newStudentForm')[0].reset();
         $('#newStudentModal').modal('show');
     }
 
     function handleSaveNewStudent() {
-         let studentData = { //get all data from modal
+        let studentData = { //get all data from modal
             username: $('#studentUsername').val(),
             password: $('#studentPassword').val(), // Hash this on the server!
             name: $('#studentName').val(),
@@ -232,7 +251,7 @@ $(document).ready(function() {
             schoolId: $('#studentSchoolId').val(),
             totalHoursWorked: 0 // Set initial hours to 0
         };
-         //Input validation
+        //Input validation
         if (!studentData.username || !studentData.password || !studentData.name || !studentData.email || !studentData.headTeacherName || !studentData.schoolName || !studentData.schoolId) {
             alert('Kérlek tölts ki minden mezőt!'); // Or a more user-friendly message
             return;
@@ -243,7 +262,7 @@ $(document).ready(function() {
         }
         // Find the next available ID
         let maxId = 0;
-        studentContainer.getAllStudents().forEach(function(student) {
+        studentContainer.getAllStudents().forEach(function (student) {
             if (student.id > maxId) {
                 maxId = student.id;
             }
@@ -267,7 +286,7 @@ $(document).ready(function() {
         studentContainer.addStudent(student2);
 
         $('#studentsTable tbody').empty();
-        studentContainer.getAllStudents().forEach(function(student) {
+        studentContainer.getAllStudents().forEach(function (student) {
             addStudentRow(student);
         });
     }
@@ -287,14 +306,14 @@ $(document).ready(function() {
         });
         $('#headTeacherSelect').html(options);
     }
-     function loadStudentsIntoSelect() {
+    function loadStudentsIntoSelect() {
         let options = '<option value="">Válassz diákot</option>';
         studentContainer.getAllStudents().forEach(student => {
             options += `<option value="${student.id}">${student.name} - ${student.username}</option>`;
         });
         $('#studentSelect').html(options);
     }
-      function loadOccupationsIntoSelect() { //from occupations.js
+    function loadOccupationsIntoSelect() { //from occupations.js
         let options = '<option value="">Válassz foglalkozást</option>';
         occupationContainer.getAllOccupations().forEach(occupation => {
             options += `<option value="${occupation.id}">${occupation.name}</option>`;
@@ -341,7 +360,7 @@ $(document).ready(function() {
     function handleAddStudentOccupation() {
         let studentId = $('#studentSelect').val();
         let occupationId = $('#occupationSelect').val();
-        if(!studentId || !occupationId){
+        if (!studentId || !occupationId) {
             alert("Kérlek válassz diákot és foglalkozást!");
             return;
         }
@@ -350,7 +369,7 @@ $(document).ready(function() {
         let student = studentContainer.getStudentById(parseInt(studentId));
         let occupation = occupationContainer.getOccupationById(parseInt(occupationId));
 
-        if(!student || !occupation){
+        if (!student || !occupation) {
             console.error("Student or occupation not found");
             return;
         }
@@ -359,10 +378,16 @@ $(document).ready(function() {
         const studentOccupation = new StudentOccupation(parseInt(studentId), student.username, student.name, parseInt(occupationId), occupation.name);
         studentOccupationContainer.addStudentOccupation(studentOccupation); //add to container
         //TODO: Add ajax
-         console.log("Adding occupation to student:", { studentId, occupationId});
+        console.log("Adding occupation to student:", { studentId, occupationId });
         alert("Adding occupation to student! (Replace this with AJAX)");
         //Clear form (optional)
         $('#studentSelect').val('');
         $('#occupationSelect').val('');
     }
+    return {
+        // ... other exports ...
+        HeadTeacher: HeadTeacher, // Export the *class*
+        HeadTeacherContainer: HeadTeacherContainer,
+        headTeacherContainer: headTeacherContainer
+    };
 });
