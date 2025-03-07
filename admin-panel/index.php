@@ -34,7 +34,7 @@
                     <a class="nav-link" href="#" data-target="headTeachers">Osztályfőnökök</a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link" data-target="sendInvitations">Meghívók</a>
+                    <a href="#" class="nav-link" data-target="invitations">Meghívók</a>
                 </li>
             </ul>
         </div>
@@ -377,6 +377,17 @@
                 </div>
             </div>
         </div>
+        <div id="invitations" class="content-section">
+            <h1>Meghívók kezelése</h1>
+            <div class="form-group">
+                <label for="eventSelectInvitations">Esemény:</label>
+                <select class="form-control" id="eventSelectInvitations">
+                    <option value="">Válassz eseményt</option>
+                    <!-- Events will be loaded here -->
+                </select>
+            </div>
+            <button id="sendInvitationsBtn" class="btn btn-primary">Meghívók Küldése</button>
+        </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
@@ -388,6 +399,7 @@
     <script src="js/students.js"></script>
     <script src="js/rankings.js"></script>
     <script src="js/headteachers.js"></script>
+    <script src="js/invitations.js"></script>
 </body>
 
 </html>

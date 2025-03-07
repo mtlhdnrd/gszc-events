@@ -318,4 +318,3 @@ $(document).ready(function() {
         eventOccupationContainer: eventOccupationContainer
         };
 });
-
