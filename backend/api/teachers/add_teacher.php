@@ -3,9 +3,9 @@ require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/config.php";
 require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/api_utils.php";
 
 if (validate_request("POST", array("name", "email", "phone"))) {
-    $name = $_POST["name"];
-    $email = $_POST["email"];
-    $phone = $_POST["phone"];
+    $name = htmlspecialchars($_POST["name"]);
+    $email = htmlspecialchars($_POST["email"]);
+    $phone = htmlspecialchars($_POST["phone"]);
 
     $errors = [];
 
