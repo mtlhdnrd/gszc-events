@@ -175,12 +175,11 @@ $(document).ready(function () {
             $.ajax({
                 type: "DELETE",
                 url: `http://localhost/bgszc-events/backend/api/events/delete_event.php?event_id=${id}`,//FIXME: localhost address?
-                dataType: 'json',
                 success: function(data){
                     row.remove();
                 },
                 error: function (xhr, status, error) {
-                    console.error("Error fetching events:", error);
+                    console.error("Error fetching events:"+ error);
                 }
 
             });

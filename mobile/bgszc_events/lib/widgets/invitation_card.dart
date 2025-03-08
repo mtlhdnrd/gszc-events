@@ -7,7 +7,7 @@ class InvitationCard extends StatelessWidget {
   final Invitation invitation;
   final VoidCallback onRefresh;
 
-  InvitationCard({required this.invitation, required this.onRefresh});
+  InvitationCard({super.key, required this.invitation, required this.onRefresh});
 
   final InvitationService _invitationService = InvitationService();
 
@@ -52,8 +52,8 @@ class InvitationCard extends StatelessWidget {
                 );
               }
             },
-            child: Text('Elfogad'),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: Text('Elfogad'),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -66,8 +66,8 @@ class InvitationCard extends StatelessWidget {
                 );
               }
             },
-            child: Text('Elutasít'),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text('Elutasít'),
           ),
         ],
       );

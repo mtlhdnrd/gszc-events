@@ -2,9 +2,17 @@ class Occupation {
     constructor(id, name) {
         this.id = id;
         this.name = name;
+        this.description = "Iskolai foglalkozás";
     }
     update(newData) {
         if (newData.name) this.name = newData.name;
+        if (newData.description) this.description = newData.description;
+    }
+    toJson() {
+        return {
+            name: this.name,
+            description: this.description
+        };
     }
 }
 
@@ -97,17 +105,52 @@ $(document).ready(function () {
 
     $('#addOccupationToEventBtn').click(handleAddOccupationToEvent);
     $('#newOccupationEventBtn').click(showAddOccupationEventForm);
+    $('#addOccupationBtn').click(handleAddOccupation);
+
 
 
     // --- Load Initial Data ---
     loadOccupations();
     loadEventsIntoSelect();
-    loadOccupationsIntoSelect();
     loadEventOccupations();
 
 
     // --- Function Definitions ---
 
+    function handleAddOccupation() { //FIXME: Not being called
+        let occupationName = $('#newOccupationName').val().trim();
+
+        if (!occupationName) {
+            alert('Kérlek adj meg egy foglalkozás nevet!');
+            return;
+        }
+
+        let maxId = 0;
+        occupationContainer.getAllOccupations().forEach(occupation => {
+            if (occupation.id > maxId) {
+                maxId = occupation.id;
+            }
+        });
+        let newId = maxId + 1;
+
+        const newOccupation = new Occupation(newId, occupationName);
+
+        occupationContainer.addOccupation(newOccupation);
+        $('#newOccupationName').val('');
+        $.ajax({
+            type: "POST",
+            url: "../backend/api/workshops/add_workshop.php",
+            data: newOccupation.toJson(),
+            success: function (data) {
+                alert("Foglalkozás hozzáadva");
+                addOccupationRow(newOccupation);
+
+            },
+            error: function (xhr, status, error) {
+                console.error("Hiba a foglalkozás frissítése közben:", xhr, status, error);
+            }
+        });
+    }
     function handleEditOccupationClick() {
         let row = $(this).closest('tr');
         if ($(this).text() === 'Szerkesztés') {
@@ -130,29 +173,29 @@ $(document).ready(function () {
     function finishEditingOccupation(row) {
         let occupationId = parseInt(row.find('.occupation-id').text(), 10);
         let updatedData = {
-            name: row.find('input[data-field="name"]').val()
+            name: row.find('input[data-field="name"]').val(),
+            description: 'Iskolai foglakozás'
         };
+        if (!updatedData.name) {
+            alert("A foglalkozás neve nem lehet üres!");
+            return;
+        }
         if (occupationContainer.updateOccupation(occupationId, updatedData)) {
-            console.log("Occupation updated in container.  Ready to save to server:", occupationId, updatedData);
-
             $.ajax({
                 type: "POST",
                 url: "../backend/api/workshops/update_workshop.php",
-                dataType: 'json',
                 data: {
-                    occupation_id: occupationId, // Send occupation_id
-                    ...updatedData            // Send updated name
+                    workshop_id: occupationId,
+                    ...updatedData
                 },
                 success: function (data) {
                     console.log("Occupation updated on server:", data);
-                    alert("Műhely sikeresen frissítve!");
-
                     row.find('input.occupation-data').attr('readonly', true);
                     row.find('.edit-button').text('Szerkesztés');
                     row.find('.cancel-button').remove();
                 },
                 error: function (xhr, status, error) {
-                    console.error("Hiba a műhely frissítése közben:", xhr, status, error);
+                    console.error("Hiba a foglalkozás frissítése közben:", xhr, status, error);
                     let errorMessage = "Ismeretlen hiba történt.";
 
                     if (xhr.status === 400) {
@@ -166,7 +209,7 @@ $(document).ready(function () {
                             errorMessage = "Érvénytelen kérés.";
                         }
                     } else if (xhr.status === 404) {
-                        errorMessage = "A frissítendő műhely nem található.";
+                        errorMessage = "A frissítendő foglalkozás nem található.";
                     } else if (xhr.status === 500) {
                         errorMessage = "Szerverhiba történt. Kérlek, próbáld újra később.";
                     }
@@ -189,14 +232,27 @@ $(document).ready(function () {
 
     function handleDeleteOccupationClick() {
         let row = $(this).closest('tr');
+        let occupationId = parseInt(row.find('.occupation-id').text(), 10);
+
         if (confirm('Biztosan törölni szeretnéd?')) {
-            let occupationId = parseInt(row.find('.occupation-id').text(), 10);
-            if (occupationContainer.removeOccupationById(occupationId)) {
-                row.remove();
-                //TODO: add ajax
-            } else {
-                console.error("Occupation with ID " + occupationId + " not found for deletion."); // Handle error
-            }
+            $.ajax({
+                type: "DELETE",
+                url: `../backend/api/workshops/delete_workshop.php?workshop_id=${occupationId}`,
+                success: function (response) {
+                    if (occupationContainer.removeOccupationById(occupationId)) {
+                        row.remove();
+                        alert("Foglalkozás sikeresen törölve!");
+                    } else {
+                        console.error("Occupation with ID " + occupationId + " not found locally.");
+                        alert("Foglalkozás nem található.");
+                    }
+
+                },
+                error: function (xhr, status, error) {
+                    console.error("Hiba a foglalkozás törlése közben:", xhr.responseText, status, error);
+                    alert("Hiba a foglalkozás törlése közben: " + xhr.responseText);
+                }
+            });
         }
     }
 
@@ -217,26 +273,58 @@ $(document).ready(function () {
     }
 
     function loadOccupations() {
-        // TODO: Replace with AJAX call to php/get_foglalkozasok.php
-        // Placeholder data:
-        const occupation1 = new Occupation(1, "Lego Robot");
-        const occupation2 = new Occupation(2, "Áramkör építés");
-        occupationContainer.addOccupation(occupation1);
-        occupationContainer.addOccupation(occupation2);
-
-        $('#occupationsTable tbody').empty();
-        occupationContainer.getAllOccupations().forEach(function (occupation) {
-            addOccupationRow(occupation);
+        $.ajax({
+            url: '../backend/api/workshops/get_workshops.php',
+            type: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                $('#occupationsTable tbody').empty();
+                occupationContainer.occupations = [];
+                data.forEach(function (occupationData) {
+                    const occupation = new Occupation(occupationData.workshop_id, occupationData.name, occupationData.description);
+                    occupationContainer.addOccupation(occupation);
+                    addOccupationRow(occupation);
+                    loadOccupationsIntoSelect();
+                });
+            },
+            error: function (xhr, status, error) {
+                console.error("Error loading occupations:", status, error);
+                alert("Hiba történt a foglalkozások betöltésekor. Kérlek próbáld újra később.");
+            }
         });
     }
     function loadEventsIntoSelect() {
         // TODO: Replace with AJAX
-        var events = eventContainer.getAllEvents(); // Use the existing eventContainer
-        let options = '<option value="">Válassz eseményt</option>';
-        events.forEach(event => {
-            options += `<option value="${event.id}">${event.name} - ${event.date}</option>`;
+        $.ajax({
+            type: "GET",
+            url: "../backend/api/events/get_events.php",
+            dataType: 'json',
+            success: function (data) {
+                eventContainer.events = [];
+
+                data.forEach(function (eventData) {
+                    const event = new Event(
+                        eventData.event_id,
+                        eventData.name,
+                        eventData.date,
+                        eventData.location,
+                        eventData.busyness,
+                        eventData.status
+                    );
+                    eventContainer.addEvent(event);
+                });
+                var events = eventContainer.getAllEvents(); // Use the existing eventContainer
+                let options = '<option value="">Válassz eseményt</option>';
+                events.forEach(event => {
+                    options += `<option value="${event.id}">${event.name} - ${event.date}</option>`;
+                });
+                $('#eventSelect').html(options);
+            },
+            error: function (xhr, status, error) {
+                console.error("Error fetching events:", error);
+                alert("Hiba történt az események betöltésekor. Kérlek, próbáld újra később.");
+            }
         });
-        $('#eventSelect').html(options);
     }
     function loadOccupationsIntoSelect() {
         let options = '<option value="">Válassz foglalkozást</option>';
@@ -352,4 +440,3 @@ $(document).ready(function () {
         eventOccupationContainer: eventOccupationContainer
     };
 });
-// Expose Occupation and OccupationContainer

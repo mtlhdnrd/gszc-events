@@ -6,6 +6,8 @@ import 'package:bgszc_events/services/auth_service.dart';
 import 'package:bgszc_events/models/user.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }

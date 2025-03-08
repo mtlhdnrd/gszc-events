@@ -112,6 +112,10 @@
 
         <div id="occupations" class="content-section" style="display: none;">
             <h1>Foglalkozások kezelése</h1>
+            <div class="form-inline mb-3">
+                <input type="text" class="form-control mr-2" id="newOccupationName" placeholder="Új foglalkozás neve">
+                <button id="addOccupationBtn" class="btn btn-primary">Foglalkozás hozzáadása</button>
+            </div>
 
             <table class="table table-striped table-bordered" id="occupationsTable">
                 <thead>
