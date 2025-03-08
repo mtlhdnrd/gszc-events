@@ -1,7 +1,6 @@
 <?php
     require_once $_SERVER["DOCUMENT_ROOT"]."/bgszc-events/backend/config.php";
     require_once $_SERVER["DOCUMENT_ROOT"]."/bgszc-events/backend/api_utils.php";
-    require_once $_SERVER["DOCUMENT_ROOT"]."/bgszc-events/backend/api/events/event.php";
     if(validate_request("POST", array("name", "date", "location", "status", "busyness"))) {
         $name = $_POST["name"];
         $date = $_POST["date"];

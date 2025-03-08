@@ -1,18 +1,18 @@
 <?php
     require_once $_SERVER["DOCUMENT_ROOT"]."/bgszc-events/backend/config.php";
     require_once $_SERVER["DOCUMENT_ROOT"]."/bgszc-events/backend/api_utils.php";
-    if(validate_request("POST", array("event_id", "name", "date", "location", "status", "busyness"))) {
-        $event_id = $_POST["event_id"];
+    if(validate_request("POST", array("name", "date", "location", "status", "busyness"))) {
         $name = $_POST["name"];
         $date = $_POST["date"];
         $location = $_POST["location"];
         $status = $_POST["status"];
         $busyness = $_POST["busyness"];
-        $query = "UPDATE `events` SET `name` = ?, `date` = ?, `location` = ?, `status` = ?, `busyness` = ? WHERE `event_id` = ?;";
+        $query = "INSERT INTO `events` (`name`, `date`, `location`, `status`, `busyness`) VALUES (?, ?, ?, ?, ?);";
         $stmt = $conn->prepare($query);
-        $stmt->bind_param("sssssi", $name, $date, $location, $status, $busyness, $event_id);
+        $stmt->bind_param("sssss", $name, $date, $location, $status, $busyness);
         if($stmt->execute()) {
-            http_response_code(200);
+            echo $stmt->insert_id;
+            http_response_code(201);
         } else {
             echo $stmt->error;
             echo "<img src='https://http.cat/500'>";

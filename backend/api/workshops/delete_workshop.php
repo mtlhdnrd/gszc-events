@@ -1,15 +1,16 @@
 <?php
     require_once $_SERVER["DOCUMENT_ROOT"]."/bgszc-events/backend/config.php";
     require_once $_SERVER["DOCUMENT_ROOT"]."/bgszc-events/backend/api_utils.php";
-    if(validate_request("GET", array())) {
-        header("Content-Type: application/json");
-        $query = "SELECT `event_id`, `name`, `date`, `location`, `status`, `busyness` FROM `events`;";
+    if(validate_request("DELETE", array("workshop_id"))) {
+        $workshop_id = $_GET["workshop_id"];
+        $query = "DELETE FROM `workshops` WHERE `workshop_id` = ?;";
         $stmt = $conn->prepare($query);
+        $stmt->bind_param("i", $workshop_id);
         if($stmt->execute()) {
-            echo json_encode($stmt->get_result()->fetch_all(MYSQLI_ASSOC));
             http_response_code(200);
         } else {
             echo $stmt->error;
+            echo "<img src='https://http.cat/500'>";
             http_response_code(500);
         }
     } else {
