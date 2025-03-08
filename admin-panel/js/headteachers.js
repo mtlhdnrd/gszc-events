@@ -34,26 +34,62 @@ $(document).ready(function () {
         });
     }
     function finishEditingHeadTeacher(row) {
-        //TODO: make ajax call for updating head teacher
-        let updatedData = {
-            name: row.find('input[data-field = "name"]').val(),
-            email: row.find('input[data-field = "email"]').val(),
-            phoneNumber: row.find('input[data-field = "phoneNumber"]').val()
-        };
         let headTeacherId = parseInt(row.find('.head-teacher-id').text(), 10);
-
+        let updatedData = {
+            name: row.find('input[data-field="name"]').val(),  
+            email: row.find('input[data-field="email"]').val(),
+            phone: row.find('input[data-field="phoneNumber"]').val()
+        };
+    
         if (headTeacherContainer.updateHeadTeacher(headTeacherId, updatedData)) {
             console.log("Head teacher updated in container.  Ready to save to server:", headTeacherId, updatedData);
-            alert("Head teacher updated! (Replace this with AJAX)"); // Replace with AJAX call
-            row.find('input.head-teacher-data').attr('readonly', true);
-            row.find('.edit-button').text('Szerkesztés');
-            row.find('.cancel-button').remove();
-
+    
+            $.ajax({
+                type: "POST",
+                url: "../backend/api/teachers/update_teacher.php",
+                dataType: 'json',
+                data: {
+                    teacher_id: headTeacherId,
+                    ...updatedData
+                },
+                success: function(data) {
+                    console.log("Head teacher updated on server:", data);
+                    alert("Osztályfőnök sikeresen frissítve!");
+    
+                    row.find('input.head-teacher-data').attr('readonly', true);
+                    row.find('.edit-button').text('Szerkesztés');
+                    row.find('.cancel-button').remove();
+                },
+                error: function(xhr, status, error) {
+                    console.error("Hiba az osztályfőnök frissítése közben:", xhr, status, error);
+                    let errorMessage = "Ismeretlen hiba történt.";
+    
+                    if (xhr.status === 400) {
+                        try {
+                            let errorData = JSON.parse(xhr.responseText);
+                            if (errorData && errorData.errors) {
+                                errorMessage = errorData.errors.join("<br>");
+                            } else if (errorData && errorData.message) {
+                                errorMessage = errorData.message;
+                            } else {
+                                errorMessage = "Érvénytelen adatok lettek elküldve.";
+                            }
+                        } catch (e) {
+                            errorMessage = "Érvénytelen kérés.";
+                        }
+                    } else if (xhr.status === 404) {
+                        errorMessage = "A frissítendő osztályfőnök nem található.";
+                    } else if (xhr.status === 500) {
+                        errorMessage = "Szerverhiba történt. Kérlek, próbáld újra később.";
+                    }
+                    alert("Hiba: " + errorMessage);
+                }
+            });
+    
         } else {
             console.error("Head teacher with ID " + headTeacherId + " not found for update.");
             alert("Head teacher with ID " + headTeacherId + " not found for update.");
         }
-
     }
 
     function handleCancelHeadTeacherClick() {
@@ -69,7 +105,6 @@ $(document).ready(function () {
         let row = $(this).closest('tr');
         let headTeacherId = parseInt(row.find('.head-teacher-id').text(), 10);
         if (headTeacherContainer.removeHeadTeacherById(headTeacherId)) { //remove from container
-            //TODO: Add ajax call remove headteacher
             deleteTeacher(headTeacherId, row);
         } else {
             console.error("Head teacher with ID " + headTeacherId + " not found for deletion.");
@@ -219,7 +254,7 @@ $(document).ready(function () {
         row.append('<td hidden><span class="head-teacher-id">' + headTeacher.id + '</span></td>');
         row.append($('<td>').append($('<input type="text" class="form-control head-teacher-data" data-field="name" readonly>').val(headTeacher.name)));
         row.append($('<td>').append($('<input type="text" class="form-control head-teacher-data" data-field="email" readonly>').val(headTeacher.email)));
-        row.append($('<td>').append($('<input type="text" class="form-control head-teacher-data" data-field="phoneNumber" readonly>').val(headTeacher.phoneNumber)));
+        row.append($('<td>').append($('<input type="text" class="form-control head-teacher-data" data-field="phoneNumber" readonly>').val(headTeacher.phone)));
 
 
         let actionsCell = $('<td>');
