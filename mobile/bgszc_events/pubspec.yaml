@@ -33,7 +33,14 @@ dependencies:
   http: ^1.1.0  # API hívásokhoz
   provider: ^6.0.5 # State management
   shared_preferences: ^2.2.2 # Adatok (pl. bejelentkezési token) tárolására lokálisan
-  intl: ^0.18.1
+  intl: ^0.20.2
+  firebase_core: ^3.12.1  # Vagy a legfrissebb verzió
+
+  # Firebase Cloud Messaging (FCM - push értesítésekhez)
+  firebase_messaging: ^15.2.4 # Vagy a legfrissebb verzió
+
+  # Flutter Local Notifications (helyi értesítésekhez)
+  flutter_local_notifications: ^18.0.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
