@@ -87,7 +87,7 @@ CREATE TABLE student_invitation(
     `invitation_id` INT PRIMARY KEY AUTO_INCREMENT,
     `event_workshop_id` INT,
     `user_id` INT,
-    `status` VARCHAR(50) --pending/accepted/refused/re-accepted
+    `status` VARCHAR(50) --pending/accepted/refused/re-accepted/expired
 );
 
 CREATE TABLE attendance_sheet (
