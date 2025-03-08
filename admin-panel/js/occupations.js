@@ -3,7 +3,7 @@ class Occupation {
         this.id = id;
         this.name = name;
     }
-     update(newData) {
+    update(newData) {
         if (newData.name) this.name = newData.name;
     }
 }
@@ -33,7 +33,7 @@ class OccupationContainer {
         this.occupations = this.occupations.filter(occupation => occupation.id !== id);
         return this.occupations.length < initialLength;
     }
-      updateOccupation(id, newData) {
+    updateOccupation(id, newData) {
         const occupation = this.getOccupationById(id);
         if (occupation) {
             occupation.update(newData);
@@ -87,7 +87,7 @@ class EventOccupationContainer {
 const occupationContainer = new OccupationContainer();
 const eventOccupationContainer = new EventOccupationContainer();
 
-$(document).ready(function() {
+$(document).ready(function () {
 
     // --- Event Handlers (using event delegation) ---
     $('#occupationsTable tbody').on('click', '.edit-button', handleEditOccupationClick);
@@ -109,8 +109,8 @@ $(document).ready(function() {
     // --- Function Definitions ---
 
     function handleEditOccupationClick() {
-       let row = $(this).closest('tr');
-         if ($(this).text() === 'Szerkesztés') {
+        let row = $(this).closest('tr');
+        if ($(this).text() === 'Szerkesztés') {
             startEditingOccupation(row);
         } else {
             finishEditingOccupation(row);
@@ -122,33 +122,65 @@ $(document).ready(function() {
         row.find('.edit-button').text('Mentés');
         let cancelBtn = $('<button class="btn btn-secondary btn-sm cancel-button">Mégse</button>');
         row.find('.edit-button').after(cancelBtn);
-        row.find('input.occupation-data').each(function() {
+        row.find('input.occupation-data').each(function () {
             $(this).data('original-value', $(this).val());
         });
     }
 
-     function finishEditingOccupation(row) {
+    function finishEditingOccupation(row) {
+        let occupationId = parseInt(row.find('.occupation-id').text(), 10);
         let updatedData = {
             name: row.find('input[data-field="name"]').val()
         };
-
-        let occupationId = parseInt(row.find('.occupation-id').text(), 10);
-
         if (occupationContainer.updateOccupation(occupationId, updatedData)) {
             console.log("Occupation updated in container.  Ready to save to server:", occupationId, updatedData);
-             alert("Occupation updated! (Replace this with AJAX)"); // Replace with AJAX
-            //TODO: Add ajax
-            row.find('input.occupation-data').attr('readonly', true);
-            row.find('.edit-button').text('Szerkesztés');
-            row.find('.cancel-button').remove();
+
+            $.ajax({
+                type: "POST",
+                url: "../backend/api/workshops/update_workshop.php",
+                dataType: 'json',
+                data: {
+                    occupation_id: occupationId, // Send occupation_id
+                    ...updatedData            // Send updated name
+                },
+                success: function (data) {
+                    console.log("Occupation updated on server:", data);
+                    alert("Műhely sikeresen frissítve!");
+
+                    row.find('input.occupation-data').attr('readonly', true);
+                    row.find('.edit-button').text('Szerkesztés');
+                    row.find('.cancel-button').remove();
+                },
+                error: function (xhr, status, error) {
+                    console.error("Hiba a műhely frissítése közben:", xhr, status, error);
+                    let errorMessage = "Ismeretlen hiba történt.";
+
+                    if (xhr.status === 400) {
+                        try {
+                            let errorData = JSON.parse(xhr.responseText);
+                            errorMessage = errorData.message ? errorData.message : "Érvénytelen adatok lettek elküldve.";
+                            if (errorData && errorData.errors) {
+                                errorMessage = errorData.errors.join("<br>");
+                            }
+                        } catch (e) {
+                            errorMessage = "Érvénytelen kérés.";
+                        }
+                    } else if (xhr.status === 404) {
+                        errorMessage = "A frissítendő műhely nem található.";
+                    } else if (xhr.status === 500) {
+                        errorMessage = "Szerverhiba történt. Kérlek, próbáld újra később.";
+                    }
+                    alert("Hiba: " + errorMessage);
+                }
+            });
         } else {
             console.error("Occupation with ID " + occupationId + " not found for update.");
-             alert("Occupation with ID " + occupationId + " not found for update.");
+            alert("Occupation with ID " + occupationId + " not found for update.");
         }
     }
     function handleCancelOccupationClick() {
         let row = $(this).closest('tr');
-        row.find('input.occupation-data').each(function() {
+        row.find('input.occupation-data').each(function () {
             $(this).val($(this).data('original-value')).attr('readonly', true);
         });
         $(this).remove();
@@ -156,14 +188,14 @@ $(document).ready(function() {
     }
 
     function handleDeleteOccupationClick() {
-         let row = $(this).closest('tr');
+        let row = $(this).closest('tr');
         if (confirm('Biztosan törölni szeretnéd?')) {
             let occupationId = parseInt(row.find('.occupation-id').text(), 10);
-            if(occupationContainer.removeOccupationById(occupationId)){
+            if (occupationContainer.removeOccupationById(occupationId)) {
                 row.remove();
                 //TODO: add ajax
             } else {
-                 console.error("Occupation with ID " + occupationId + " not found for deletion."); // Handle error
+                console.error("Occupation with ID " + occupationId + " not found for deletion."); // Handle error
             }
         }
     }
@@ -177,7 +209,7 @@ $(document).ready(function() {
                 row.remove();
                 console.log("Event-Occupation removed");
                 alert("Event-Occupation removed! (Replace this with AJAX)"); // Replace with AJAX
-                 // TODO: Add AJAX call to php/delete_esemeny_foglalkozas.php
+                // TODO: Add AJAX call to php/delete_esemeny_foglalkozas.php
             } else {
                 console.error("Event-Occupation not found for deletion.");
             }
@@ -192,8 +224,8 @@ $(document).ready(function() {
         occupationContainer.addOccupation(occupation1);
         occupationContainer.addOccupation(occupation2);
 
-         $('#occupationsTable tbody').empty();
-        occupationContainer.getAllOccupations().forEach(function(occupation) {
+        $('#occupationsTable tbody').empty();
+        occupationContainer.getAllOccupations().forEach(function (occupation) {
             addOccupationRow(occupation);
         });
     }
@@ -202,11 +234,11 @@ $(document).ready(function() {
         var events = eventContainer.getAllEvents(); // Use the existing eventContainer
         let options = '<option value="">Válassz eseményt</option>';
         events.forEach(event => {
-                options += `<option value="${event.id}">${event.name} - ${event.date}</option>`;
+            options += `<option value="${event.id}">${event.name} - ${event.date}</option>`;
         });
-         $('#eventSelect').html(options);
+        $('#eventSelect').html(options);
     }
-     function loadOccupationsIntoSelect() {
+    function loadOccupationsIntoSelect() {
         let options = '<option value="">Válassz foglalkozást</option>';
         occupationContainer.getAllOccupations().forEach(occupation => {
             options += `<option value="${occupation.id}">${occupation.name}</option>`;
@@ -224,7 +256,7 @@ $(document).ready(function() {
         eventOccupationContainer.addEventOccupation(eo2);
 
         $('#eventOccupationsTable tbody').empty();
-        eventOccupationContainer.getAllEventOccupations().forEach(function(eventOccupation) {
+        eventOccupationContainer.getAllEventOccupations().forEach(function (eventOccupation) {
             addEventOccupationRow(eventOccupation);
         });
     }
@@ -246,19 +278,19 @@ $(document).ready(function() {
     }
 
     function addEventOccupationRow(eventOccupation) {
-    let row = $('<tr>');
-    // Add the hidden ID cell:
-    row.append('<td hidden><span class="event-occupation-id">' + eventOccupation.eventOccupationId + '</span></td>');
-    row.append($('<td>').text(eventOccupation.eventName));
-    row.append($('<td>').text(eventOccupation.occupationName));
-    row.append($('<td>').text(eventOccupation.mentorCount));
-    row.append($('<td>').text(eventOccupation.hoursCount));
+        let row = $('<tr>');
+        // Add the hidden ID cell:
+        row.append('<td hidden><span class="event-occupation-id">' + eventOccupation.eventOccupationId + '</span></td>');
+        row.append($('<td>').text(eventOccupation.eventName));
+        row.append($('<td>').text(eventOccupation.occupationName));
+        row.append($('<td>').text(eventOccupation.mentorCount));
+        row.append($('<td>').text(eventOccupation.hoursCount));
 
-    let deleteButton = $('<button class="btn btn-danger btn-sm delete-event-occupation-button">Törlés</button>');
-    row.append($('<td>').append(deleteButton));
+        let deleteButton = $('<button class="btn btn-danger btn-sm delete-event-occupation-button">Törlés</button>');
+        row.append($('<td>').append(deleteButton));
 
-    $('#eventOccupationsTable tbody').append(row);
-}
+        $('#eventOccupationsTable tbody').append(row);
+    }
 
     // -- Form Show/Hide Functions --
 
@@ -268,7 +300,7 @@ $(document).ready(function() {
         $('#addOccupationEventForm').show();
     }
     //--Add Event Occupation Handler--
-     function handleAddOccupationToEvent() {
+    function handleAddOccupationToEvent() {
         let eventId = $('#eventSelect').val();
         let occupationId = $('#occupationSelectEvent').val();
         let mentorCount = $('#mentorCount').val();
@@ -278,25 +310,25 @@ $(document).ready(function() {
             alert('Kérlek válassz eseményt, foglalkozást, és add meg a szükséges mentorok számát és óraszámot!');
             return;
         }
-        if(isNaN(parseInt(hoursCount)) || parseInt(hoursCount) <= 0){
+        if (isNaN(parseInt(hoursCount)) || parseInt(hoursCount) <= 0) {
             alert("Az órák száma egy 0-nál nagyobb szám kell, hogy legyen!");
             return;
         }
-        if(isNaN(parseInt(mentorCount)) || parseInt(mentorCount) <= 0){
-             alert('A szükséges mentorok száma egy 0-nál nagyobb szám kell, hogy legyen!');
+        if (isNaN(parseInt(mentorCount)) || parseInt(mentorCount) <= 0) {
+            alert('A szükséges mentorok száma egy 0-nál nagyobb szám kell, hogy legyen!');
             return;
         }
 
         let event = eventContainer.getEventById(parseInt(eventId));
         let occupation = occupationContainer.getOccupationById(parseInt(occupationId));
-        if(!event || !occupation){
+        if (!event || !occupation) {
             console.error("Event or occupation not found")
             return;
         }
 
         // Find the next available ID
         let maxId = 0;
-        eventOccupationContainer.getAllEventOccupations().forEach(function(eo) {
+        eventOccupationContainer.getAllEventOccupations().forEach(function (eo) {
             if (eo.eventOccupationId > maxId) {
                 maxId = eo.eventOccupationId;
             }
@@ -318,6 +350,6 @@ $(document).ready(function() {
         EventOccupation: EventOccupation,
         EventOccupationContainer: EventOccupationContainer,
         eventOccupationContainer: eventOccupationContainer
-        };
+    };
 });
 // Expose Occupation and OccupationContainer
