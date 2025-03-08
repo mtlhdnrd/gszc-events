@@ -1,5 +1,5 @@
 // --- HeadTeacher Class and Container ---
-$(document).ready(function() {
+$(document).ready(function () {
 
     // --- Event Handlers ---
     $('#headTeachersTable tbody').on('click', '.edit-button', handleEditHeadTeacherClick);
@@ -18,18 +18,18 @@ $(document).ready(function() {
     // -- Head Teacher CRUD --
     function handleEditHeadTeacherClick() {
         let row = $(this).closest('tr');
-         if ($(this).text() === 'Szerkesztés') {
+        if ($(this).text() === 'Szerkesztés') {
             startEditingHeadTeacher(row);
         } else {
             finishEditingHeadTeacher(row);
         }
     }
-     function startEditingHeadTeacher(row) {
+    function startEditingHeadTeacher(row) {
         row.find('input.head-teacher-data').removeAttr('readonly');
         row.find('.edit-button').text('Mentés');
         let cancelBtn = $('<button class="btn btn-secondary btn-sm cancel-button">Mégse</button>');
         row.find('.edit-button').after(cancelBtn);
-        row.find('input.head-teacher-data').each(function() {
+        row.find('input.head-teacher-data').each(function () {
             $(this).data('original-value', $(this).val());
         });
     }
@@ -42,8 +42,8 @@ $(document).ready(function() {
         };
         let headTeacherId = parseInt(row.find('.head-teacher-id').text(), 10);
 
-          if (headTeacherContainer.updateHeadTeacher(headTeacherId, updatedData)) {
-             console.log("Head teacher updated in container.  Ready to save to server:", headTeacherId, updatedData);
+        if (headTeacherContainer.updateHeadTeacher(headTeacherId, updatedData)) {
+            console.log("Head teacher updated in container.  Ready to save to server:", headTeacherId, updatedData);
             alert("Head teacher updated! (Replace this with AJAX)"); // Replace with AJAX call
             row.find('input.head-teacher-data').attr('readonly', true);
             row.find('.edit-button').text('Szerkesztés');
@@ -58,7 +58,7 @@ $(document).ready(function() {
 
     function handleCancelHeadTeacherClick() {
         let row = $(this).closest('tr');
-        row.find('input.head-teacher-data').each(function() {
+        row.find('input.head-teacher-data').each(function () {
             $(this).val($(this).data('original-value')).attr('readonly', true);
         });
         $(this).remove();
@@ -66,20 +66,66 @@ $(document).ready(function() {
     }
 
     function handleDeleteHeadTeacherClick() {
-         let row = $(this).closest('tr');
-        if (confirm('Biztosan törölni szeretnéd?')) {
-             let headTeacherId = parseInt(row.find('.head-teacher-id').text(), 10);
-             console.log(headTeacherId);
-            if(headTeacherContainer.removeHeadTeacherById(headTeacherId)){ //remove from container
-                row.remove();
-                 alert("Head teacher removed! (Replace this with AJAX)");
-                 //TODO: Add ajax call remove headteacher
-            } else {
-                 console.error("Head teacher with ID " + headTeacherId + " not found for deletion.");
-            }
+        let row = $(this).closest('tr');
+        let headTeacherId = parseInt(row.find('.head-teacher-id').text(), 10);
+        if (headTeacherContainer.removeHeadTeacherById(headTeacherId)) { //remove from container
+            //TODO: Add ajax call remove headteacher
+            deleteTeacher(headTeacherId, row);
+        } else {
+            console.error("Head teacher with ID " + headTeacherId + " not found for deletion.");
+        }
+
+    }
+    function deleteTeacher(teacherId, row) {
+        if (confirm('Biztosan törölni szeretnéd ezt a tanárt?')) {
+            $.ajax({
+                type: "DELETE",
+                url: `../backend/api/teachers/delete_teacher.php?teacher_id=${teacherId}`,
+                dataType: 'json',
+                success: function (data) {
+                    console.log("Tanár sikeresen törölve:", data);
+                    row.remove(); // Remove the row from the table
+                    alert(data.message);
+                },
+                error: function (xhr, status, error) {
+                    console.error("Hiba a tanár törlése közben:", xhr, status, error);
+                    let errorMessage = "Ismeretlen hiba történt.";
+
+                    if (xhr.status === 400) {
+                        try {
+                            let errorData = JSON.parse(xhr.responseText);
+                            errorMessage = errorData.message;
+                        } catch (e) {
+                            errorMessage = "Érvénytelen kérés.";
+                        }
+                    } else if (xhr.status === 404) {
+                        errorMessage = "A törlendő tanár nem található.";
+                    } else if (xhr.status === 500) {
+                        errorMessage = "Szerverhiba történt. Kérlek, próbáld újra később.";
+                    }
+                    alert("Hiba: " + errorMessage);
+                }
+            });
         }
     }
-      //--Modal Window--
+
+    // Example usage (assuming you have a delete button in each table row):
+    // Event Delegation - this is the BEST way to handle dynamically added rows
+    $('#teachersTable tbody').on('click', '.delete-teacher-button', function () {
+        let row = $(this).closest('tr');
+        let teacherId = parseInt(row.find('td:first-child').text(), 10); // Get teacher ID from the first <td>
+        deleteTeacher(teacherId, row);
+    });
+
+    // Non-delegated event handler (only works for elements present on page load) - NOT RECOMMENDED
+    /*
+    $('.delete-teacher-button').click(function() {
+        let row = $(this).closest('tr');
+        let teacherId = parseInt(row.find('td:first-child').text(), 10);
+        deleteTeacher(teacherId, row);
+    });
+    */
+    //--Modal Window--
 
     function showNewHeadTeacherModal() {
         $('#newHeadTeacherForm')[0].reset();
@@ -93,18 +139,18 @@ $(document).ready(function() {
             phoneNumber: $('#headTeacherPhoneNumber').val()
         };
         //Input validation
-        if(!headTeacherData.name || !headTeacherData.email || !headTeacherData.phoneNumber){
+        if (!headTeacherData.name || !headTeacherData.email || !headTeacherData.phoneNumber) {
             alert("Kérlek tölts ki minden mezőt!");
             return;
         }
-        if(isNaN(parseInt(headTeacherData.phoneNumber))){
+        if (isNaN(parseInt(headTeacherData.phoneNumber))) {
             alert("A telefonszám egy szám kell, hogy legyen!");
             return;
         }
 
         //Find next available ID
-         let maxId = 0;
-        headTeacherContainer.getAllHeadTeachers().forEach(function(ht) {
+        let maxId = 0;
+        headTeacherContainer.getAllHeadTeachers().forEach(function (ht) {
             if (ht.id > maxId) {
                 maxId = ht.id;
             }
@@ -114,11 +160,16 @@ $(document).ready(function() {
         headTeacherContainer.addHeadTeacher(newHeadTeacher); //add to container
         addHeadTeacherRow(newHeadTeacher); //add to table
         $('#newHeadTeacherModal').modal('hide'); //hide modal
-         alert("Head teacher added! (Replace this with AJAX)");
-        // TODO: make ajax call for adding new head teacher
+        let headteacherData = newHeadTeacher.toJson();
+        // TODO: error handling
         $.ajax({
             type: "POST",
-            
+            url: "../backend/api/teachers/add_teacher.php",
+            dataType: "json",
+            data: headteacherData,
+            success: function (data) {
+                console.log(data.message);
+            }
         });
 
     }
@@ -127,12 +178,38 @@ $(document).ready(function() {
 
     function loadHeadTeachers() {
         // TODO: Replace with AJAX call to php/get_osztalyfonokok.php
+        $.ajax({
+            type: "GET",
+            url: "../backend/api/teachers/get_teachers.php",
+            dataType: 'json',
+            success: function (data) {
+                headTeacherContainer.empty();
+                data.forEach(function (teacherData) {
+                    let teacher = new HeadTeacher(
+                        teacherData.teacher_id,
+                        teacherData.name,
+                        teacherData.email,
+                        teacherData.phone
+                    );
+                    headTeacherContainer.addHeadTeacher(teacher);
+                });
 
-        $('#headTeachersTable tbody').empty();
-        headTeacherContainer.getAllHeadTeachers().forEach(function(headTeacher) {
-            addHeadTeacherRow(headTeacher);
+                $('#headTeachersTable tbody').empty();
+                headTeacherContainer.getAllHeadTeachers().forEach(function (headTeacher) {
+                    addHeadTeacherRow(headTeacher);
+                });
+            },
+            error: function (xhr, status, error) {
+                console.error("Hiba a tanárok lekérése közben:", xhr, status, error);
+                let errorMessage = "Ismeretlen hiba történt.";
+                if (xhr.status === 500) {
+                    errorMessage = "Szerverhiba történt. Kérlek, próbáld újra később.";
+                }
+                alert("Hiba: " + errorMessage);
+            }
         });
     }
+
 
 
     // -- Add Row --

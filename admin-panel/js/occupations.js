@@ -232,7 +232,7 @@ $(document).ready(function() {
     // -- Add Row Functions --
     function addOccupationRow(occupation) {
         let row = $('<tr>');
-        row.append('<td class="hidden-data"><span class="occupation-id">' + occupation.id + '</span></td>');
+        row.append('<td hidden><span class="occupation-id">' + occupation.id + '</span></td>');
         row.append($('<td>').text(occupation.id)); // Display ID
         row.append($('<td>').append($('<input type="text" class="form-control occupation-data" data-field="name" readonly>').val(occupation.name)));
 
@@ -248,7 +248,7 @@ $(document).ready(function() {
     function addEventOccupationRow(eventOccupation) {
     let row = $('<tr>');
     // Add the hidden ID cell:
-    row.append('<td class="hidden-data"><span class="event-occupation-id">' + eventOccupation.eventOccupationId + '</span></td>');
+    row.append('<td hidden><span class="event-occupation-id">' + eventOccupation.eventOccupationId + '</span></td>');
     row.append($('<td>').text(eventOccupation.eventName));
     row.append($('<td>').text(eventOccupation.occupationName));
     row.append($('<td>').text(eventOccupation.mentorCount));

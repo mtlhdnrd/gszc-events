@@ -29,12 +29,6 @@ if (validate_request("POST", array("name", "email", "phone"))) {
         $errors[] = "A telefonszám túl hosszú (maximum 20 karakter).";
     }
 
-    if (!empty($errors)) {
-        http_response_code(400);
-        echo json_encode(['message' => 'Érvénytelen adatok.', 'errors' => $errors]);
-        exit;
-    }
-
 
 
     $query = "INSERT INTO `teachers` (`name`, `email`, `phone`) VALUES (?, ?, ?)";
