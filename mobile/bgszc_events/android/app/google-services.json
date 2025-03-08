@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "927100065287",
+    "project_id": "bgszc-events",
+    "storage_bucket": "bgszc-events.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:927100065287:android:3050d15a032b5eb5f6fca2",
+        "android_client_info": {
+          "package_name": "com.example.bgszc_events"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAIzdgyJSZnk5yv6aw9gOXiT9JPMMNgIW4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

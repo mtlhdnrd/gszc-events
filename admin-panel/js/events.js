@@ -172,7 +172,6 @@ $(document).ready(function () {
     function loadEvents() {
         $('#eventsTable tbody').empty();
         eventContainer.getAllEvents().forEach(function (event) {
-            console.log(event);
             addEventRow(event);
         });
 
@@ -223,7 +222,6 @@ $(document).ready(function () {
         row.find('td').removeClass('status-pending status-ready status-failed');
     
         // Add the appropriate status class to ALL td elements within the row
-        console.log(status);
         switch (status) {
             case 'pending':
                 row.find('td').addClass('status-pending');

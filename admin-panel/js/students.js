@@ -359,7 +359,7 @@ $(document).ready(function () {
 
     function handleAddStudentOccupation() {
         let studentId = $('#studentSelect').val();
-        let occupationId = $('#occupationSelect').val();
+        let occupationId = $('#occupationSelectStudent').val();
         if (!studentId || !occupationId) {
             alert("Kérlek válassz diákot és foglalkozást!");
             return;
@@ -386,7 +386,7 @@ $(document).ready(function () {
     }
     return {
         // ... other exports ...
-        HeadTeacher: HeadTeacher, // Export the *class*
+        HeadTeacher: HeadTeacher,
         HeadTeacherContainer: HeadTeacherContainer,
         headTeacherContainer: headTeacherContainer
     };
