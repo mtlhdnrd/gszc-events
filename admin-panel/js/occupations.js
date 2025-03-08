@@ -3,7 +3,7 @@ class Occupation {
         this.id = id;
         this.name = name;
     }
-     update(newData) {
+    update(newData) {
         if (newData.name) this.name = newData.name;
     }
 }
@@ -33,7 +33,7 @@ class OccupationContainer {
         this.occupations = this.occupations.filter(occupation => occupation.id !== id);
         return this.occupations.length < initialLength;
     }
-      updateOccupation(id, newData) {
+     updateOccupation(id, newData) {
         const occupation = this.getOccupationById(id);
         if (occupation) {
             occupation.update(newData);
@@ -45,14 +45,13 @@ class OccupationContainer {
 
 // --- EventOccupation Class and Container ---
 class EventOccupation {
-    constructor(eventOccupationId, eventId, eventName, occupationId, occupationName, mentorCount, hoursCount) {
-        this.eventOccupationId = eventOccupationId; // Added eventOccupationId
+    constructor(eventId, eventName, occupationId, occupationName, mentorCount, hoursCount) { // Added hoursCount
         this.eventId = eventId;
         this.eventName = eventName;
         this.occupationId = occupationId;
         this.occupationName = occupationName;
         this.mentorCount = mentorCount;
-        this.hoursCount = hoursCount;
+        this.hoursCount = hoursCount; // Added hoursCount
     }
 }
 
@@ -72,17 +71,12 @@ class EventOccupationContainer {
         return this.eventOccupations;
     }
 
-    getEventOccupationById(eventOccupationId) { // Added get by ID
-        return this.eventOccupations.find(eo => eo.eventOccupationId === eventOccupationId);
-    }
-
-    removeEventOccupationById(eventOccupationId) { // Changed to remove by ID
+    removeEventOccupation(eventId, occupationId) {
         const initialLength = this.eventOccupations.length;
-        this.eventOccupations = this.eventOccupations.filter(eo => eo.eventOccupationId !== eventOccupationId);
+        this.eventOccupations = this.eventOccupations.filter(eo => !(eo.eventId === eventId && eo.occupationId === occupationId));
         return this.eventOccupations.length < initialLength;
     }
 }
-
 // --- Global Instances ---
 const occupationContainer = new OccupationContainer();
 const eventOccupationContainer = new EventOccupationContainer();
@@ -97,19 +91,20 @@ $(document).ready(function() {
 
     $('#addOccupationToEventBtn').click(handleAddOccupationToEvent);
     $('#newOccupationEventBtn').click(showAddOccupationEventForm);
+    $('#cancelAddOccupationToEventBtn').click(hideAddOccupationEventForm);
 
 
     // --- Load Initial Data ---
     loadOccupations();
     loadEventsIntoSelect();
-    loadOccupationsIntoSelect();
+    loadOccupationsIntoSelect(); //Load selects
     loadEventOccupations();
 
 
     // --- Function Definitions ---
-
+    //--Occupation handlers--
     function handleEditOccupationClick() {
-       let row = $(this).closest('tr');
+        let row = $(this).closest('tr');
          if ($(this).text() === 'Szerkesztés') {
             startEditingOccupation(row);
         } else {
@@ -127,27 +122,29 @@ $(document).ready(function() {
         });
     }
 
-     function finishEditingOccupation(row) {
+      function finishEditingOccupation(row) {
+        // Get the updated data from the input fields
         let updatedData = {
             name: row.find('input[data-field="name"]').val()
         };
 
+        // Get the occupation ID from the hidden span
         let occupationId = parseInt(row.find('.occupation-id').text(), 10);
 
         if (occupationContainer.updateOccupation(occupationId, updatedData)) {
             console.log("Occupation updated in container.  Ready to save to server:", occupationId, updatedData);
-             alert("Occupation updated! (Replace this with AJAX)"); // Replace with AJAX
-            //TODO: Add ajax
+            alert("Occupation updated! (Replace this with AJAX)"); // Replace with AJAX
+            //TODO: add ajax
             row.find('input.occupation-data').attr('readonly', true);
             row.find('.edit-button').text('Szerkesztés');
             row.find('.cancel-button').remove();
         } else {
             console.error("Occupation with ID " + occupationId + " not found for update.");
-             alert("Occupation with ID " + occupationId + " not found for update.");
+            alert("Occupation with ID " + occupationId + " not found for update.");
         }
     }
     function handleCancelOccupationClick() {
-        let row = $(this).closest('tr');
+         let row = $(this).closest('tr');
         row.find('input.occupation-data').each(function() {
             $(this).val($(this).data('original-value')).attr('readonly', true);
         });
@@ -161,29 +158,31 @@ $(document).ready(function() {
             let occupationId = parseInt(row.find('.occupation-id').text(), 10);
             if(occupationContainer.removeOccupationById(occupationId)){
                 row.remove();
-                //TODO: add ajax
+                //TODO add ajax
             } else {
-                 console.error("Occupation with ID " + occupationId + " not found for deletion."); // Handle error
+                 console.error("Occupation with ID " + occupationId + " not found for deletion.");
             }
         }
     }
-
-    function handleDeleteEventOccupationClick() {
+    //--Event Occupation handlers--
+     function handleDeleteEventOccupationClick() {
         let row = $(this).closest('tr');
         if (confirm('Biztosan törölni szeretnéd?')) {
-            let eventOccupationId = parseInt(row.find('.event-occupation-id').text(), 10); // Get by ID
+            let eventId = parseInt(row.find('.event-id').text(), 10);
+            let occupationId = parseInt(row.find('.occupation-id').text(), 10);
 
-            if (eventOccupationContainer.removeEventOccupationById(eventOccupationId)) { // Remove by ID
+            if (eventOccupationContainer.removeEventOccupation(eventId, occupationId)) {
                 row.remove();
                 console.log("Event-Occupation removed");
-                alert("Event-Occupation removed! (Replace this with AJAX)"); // Replace with AJAX
-                 // TODO: Add AJAX call to php/delete_esemeny_foglalkozas.php
+                alert("Event-Occupation removed! (Replace this with AJAX)");
+                //TODO Add ajax
             } else {
                 console.error("Event-Occupation not found for deletion.");
             }
         }
     }
 
+    // -- Load Data Functions --
     function loadOccupations() {
         // TODO: Replace with AJAX call to php/get_foglalkozasok.php
         // Placeholder data:
@@ -199,7 +198,7 @@ $(document).ready(function() {
     }
     function loadEventsIntoSelect() {
         // TODO: Replace with AJAX
-        var events = eventContainer.getAllEvents(); // Use the existing eventContainer
+        var events = eventContainer.getAllEvents();
         let options = '<option value="">Válassz eseményt</option>';
         events.forEach(event => {
                 options += `<option value="${event.id}">${event.name} - ${event.date}</option>`;
@@ -211,15 +210,15 @@ $(document).ready(function() {
         occupationContainer.getAllOccupations().forEach(occupation => {
             options += `<option value="${occupation.id}">${occupation.name}</option>`;
         });
-        $('#occupationSelectEvent').html(options); // Use the correct ID!
+        $('#occupationSelect').html(options);
     }
 
     function loadEventOccupations() {
         // TODO: Replace with AJAX call to php/get_esemeny_foglalkozasok.php
         // Placeholder data:
 
-        const eo1 = new EventOccupation(1, 1, "Dance Rehearsal", 1, "Lego Robot", 2, 4);
-        const eo2 = new EventOccupation(2, 2, "Poetry Slam", 2, "Áramkör építés", 5, 2);
+        const eo1 = new EventOccupation(1, "Dance Rehearsal", 1, "Lego Robot", 2, 4); // Added hoursCount
+        const eo2 = new EventOccupation(2, "Poetry Slam", 2, "Áramkör építés", 5, 2); // Added hoursCount
         eventOccupationContainer.addEventOccupation(eo1);
         eventOccupationContainer.addEventOccupation(eo2);
 
@@ -232,8 +231,8 @@ $(document).ready(function() {
     // -- Add Row Functions --
     function addOccupationRow(occupation) {
         let row = $('<tr>');
-        row.append('<td class="hidden-data"><span class="occupation-id">' + occupation.id + '</span></td>');
-        row.append($('<td>').text(occupation.id)); // Display ID
+        row.append('<td hidden><span class="occupation-id">' + occupation.id + '</span></td>');
+        row.append($('<td>').text(occupation.id));
         row.append($('<td>').append($('<input type="text" class="form-control occupation-data" data-field="name" readonly>').val(occupation.name)));
 
         let actionsCell = $('<td>');
@@ -246,19 +245,19 @@ $(document).ready(function() {
     }
 
     function addEventOccupationRow(eventOccupation) {
-    let row = $('<tr>');
-    // Add the hidden ID cell:
-    row.append('<td class="hidden-data"><span class="event-occupation-id">' + eventOccupation.eventOccupationId + '</span></td>');
-    row.append($('<td>').text(eventOccupation.eventName));
-    row.append($('<td>').text(eventOccupation.occupationName));
-    row.append($('<td>').text(eventOccupation.mentorCount));
-    row.append($('<td>').text(eventOccupation.hoursCount));
+        let row = $('<tr>');
+        row.append('<td hidden><span class="event-id">' + eventOccupation.eventId + '</span></td>');
+        row.append('<td hidden><span class="occupation-id">' + eventOccupation.occupationId + '</span></td>');
+        row.append($('<td>').text(eventOccupation.eventName));
+        row.append($('<td>').text(eventOccupation.occupationName));
+        row.append($('<td>').text(eventOccupation.mentorCount));
+        row.append($('<td>').text(eventOccupation.hoursCount)); // Display hoursCount
 
-    let deleteButton = $('<button class="btn btn-danger btn-sm delete-event-occupation-button">Törlés</button>');
-    row.append($('<td>').append(deleteButton));
+        let deleteButton = $('<button class="btn btn-danger btn-sm delete-event-occupation-button">Törlés</button>');
+        row.append($('<td>').append(deleteButton));
 
-    $('#eventOccupationsTable tbody').append(row);
-}
+        $('#eventOccupationsTable tbody').append(row);
+    }
 
     // -- Form Show/Hide Functions --
 
@@ -267,14 +266,22 @@ $(document).ready(function() {
         loadOccupationsIntoSelect();
         $('#addOccupationEventForm').show();
     }
+
+    function hideAddOccupationEventForm() {
+        $('#addOccupationEventForm').hide();
+        $('#eventSelect').val('');
+        $('#occupationSelect').val('');
+        $('#mentorCount').val('1');
+        $('#hoursCount').val(''); // Clear hoursCount
+    }
     //--Add Event Occupation Handler--
      function handleAddOccupationToEvent() {
         let eventId = $('#eventSelect').val();
-        let occupationId = $('#occupationSelectEvent').val();
+        let occupationId = $('#occupationSelect').val();
         let mentorCount = $('#mentorCount').val();
-        let hoursCount = $('#hoursCount').val();
+        let hoursCount = $('#hoursCount').val(); // Get hoursCount
 
-        if (!eventId || !occupationId || !mentorCount || !hoursCount) {
+        if (!eventId || !occupationId || !mentorCount || !hoursCount) { // Validate hoursCount
             alert('Kérlek válassz eseményt, foglalkozást, és add meg a szükséges mentorok számát és óraszámot!');
             return;
         }
@@ -293,22 +300,13 @@ $(document).ready(function() {
             console.error("Event or occupation not found")
             return;
         }
-
-        // Find the next available ID
-        let maxId = 0;
-        eventOccupationContainer.getAllEventOccupations().forEach(function(eo) {
-            if (eo.eventOccupationId > maxId) {
-                maxId = eo.eventOccupationId;
-            }
-        });
-        let newId = maxId + 1;
-        const eventOccupation = new EventOccupation(newId, parseInt(eventId), event.name, parseInt(occupationId), occupation.name, parseInt(mentorCount), parseInt(hoursCount));
+        const eventOccupation = new EventOccupation(parseInt(eventId), event.name, parseInt(occupationId), occupation.name, parseInt(mentorCount), parseInt(hoursCount)); // Include hoursCount
         eventOccupationContainer.addEventOccupation(eventOccupation);
 
-        addEventOccupationRow(eventOccupation); // Add to the DOM
+        addEventOccupationRow(eventOccupation); // Update the UI
         console.log("Adding occupation to event:", { eventId, occupationId, mentorCount, hoursCount });
-        alert("Adding occupation to event (Replace this with AJAX)");
-        // TODO: AJAX call to php/add_esemeny_foglalkozas.php
+        alert("Adding occupation to event (Replace this with AJAX)");  // Replace with AJAX
+        //TODO: Add ajax
 
     }
     return {
@@ -320,4 +318,4 @@ $(document).ready(function() {
         eventOccupationContainer: eventOccupationContainer
         };
 });
-// Expose Occupation and OccupationContainer
+
