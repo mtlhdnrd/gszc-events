@@ -2,8 +2,8 @@
     require_once $_SERVER["DOCUMENT_ROOT"]."/bgszc-events/backend/config.php";
     require_once $_SERVER["DOCUMENT_ROOT"]."/bgszc-events/backend/api_utils.php";
     if(validate_request("POST", array("name", "description"))) {
-        $name = $_POST["name"];
-        $description = $_POST["description"];
+        $name = htmlspecialchars($_POST["name"]);
+        $description = htmlspecialchars($_POST["description"]);
         $query = "INSERT INTO `workshops` (`name`, `description`) VALUES (?, ?);";
         $stmt = $conn->prepare($query);
         $stmt->bind_param("ss", $name, $description);
