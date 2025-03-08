@@ -106,11 +106,12 @@ $(document).ready(function () {
     function finishEditing(row) {
         // Get the updated data from the input fields
         let updatedData = {
+            event_id:  parseInt(row.find('.event-id').text(), 10),
             name: row.find('input[data-field="name"]').val(),
             date: row.find('input[data-field="date"]').val(),
             location: row.find('input[data-field="location"]').val(),
-            loadLevel: row.find('input[data-field="loadLevel"]').val(),
-            status: row.find('select[data-field="status"]').val()
+            status: row.find('select[data-field="status"]').val(),
+            busyness: row.find('input[data-field="loadLevel"]').val()
         };
 
         // Get the event ID from the hidden span
@@ -119,7 +120,29 @@ $(document).ready(function () {
         // Update the event in the container
         if (eventContainer.updateEvent(eventId, updatedData)) {
             console.log("Event updated in container.  Ready to save to server:", eventId, updatedData);
-            //TODO: Make AJAX call for update
+            $.ajax({
+                type: "POST",
+                url: "../backend/api/events/update_event.php",
+                dataType: 'json',
+                data: {
+                    event_id: eventId, 
+                    ...updatedData
+                },
+                success: function(data) {
+                    console.log("Event updated on server:", data);
+                    alert("Esemény sikeresen frissítve!");
+    
+                    // Update UI *after* successful server update
+                    row.find('input.event-data, select.event-status').attr('readonly', true);
+                    row.find('select.event-status').prop('disabled', true);
+                    row.find('.edit-button').text('Szerkesztés');
+                    row.find('.cancel-button').remove();
+                    updateRowVisuals(row, updatedData.status);
+                },
+                error: function(xhr, status, error) {
+                    console.error("Hiba az esemény frissítése közben:", xhr, status, error);
+                }
+            });
             row.find('input.event-data, select.event-status').attr('readonly', true);
             row.find('select.event-status').prop('disabled', true);
             row.find('.edit-button').text('Szerkesztés');
@@ -150,17 +173,14 @@ $(document).ready(function () {
         let id = parseInt(row.find('td:first-child').text());
         if (confirm('Biztosan törölni szeretnéd?')) {
             $.ajax({
-                type: "POST",
-                url: "../backend/api/events/delete_event.php",
+                type: "DELETE",
+                url: `http://localhost/bgszc-events/backend/api/events/delete_event.php?event_id=${id}`,//FIXME: localhost address?
                 dataType: 'json',
-                data: {'event_id':id},
                 success: function(data){
                     row.remove();
-                    console.log(data.message);
                 },
                 error: function (xhr, status, error) {
                     console.error("Error fetching events:", error);
-                    alert("Hiba történt az események betöltésekor. Kérlek, próbáld újra később.");
                 }
 
             });
@@ -295,6 +315,8 @@ $(document).ready(function () {
 
         $('#newEventModal').modal('hide');
         $('#newEventForm')[0].reset();
+        let newId = maxId + 1;
+        const newEvent = new Event(newId, eventData.name, eventData.date, eventData.location, eventData.loadLevel, eventData.status);
         $.ajax({
             type: "POST",
             url: "../backend/api/events/add_event.php",
@@ -303,8 +325,6 @@ $(document).ready(function () {
             success: function (data, textStatus, xhr) {
                 console.log("Sikeres hozzáadás:", data);
                 alert("Esemény sikeresen hozzáadva");
-                let newId = maxId + 1;
-                const newEvent = new Event(newId, eventData.name, eventData.date, eventData.location, eventData.loadLevel, eventData.status);
                 eventContainer.addEvent(newEvent);
                 addEventRow(newEvent); // Add to DOM
 

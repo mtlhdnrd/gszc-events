@@ -68,7 +68,15 @@ class HeadTeacher {
     update(newData) {
         if (newData.name) this.name = newData.name;
         if (newData.email) this.email = newData.email;
-        if(newData.phone) this.phone = newData.phone;
+        if (newData.phone) this.phone = newData.phone;
+    }
+
+    toJson() {
+        return {
+            name: this.name,
+            email: this.email,
+            phone: this.phone
+        };
     }
 }
 class HeadTeacherContainer {
@@ -95,6 +103,9 @@ class HeadTeacherContainer {
             return true;
         }
         return false;
+    }
+    empty() {
+        this.headTeachers = [];
     }
     removeHeadTeacherById(id) {
         const initialLength = this.headTeachers.length;
@@ -293,18 +304,39 @@ $(document).ready(function () {
 
     function loadHeadTeachers() {
         // TODO: Replace with AJAX call
-        // Placeholder data:
-        const headTeacher1 = new HeadTeacher(1, "Teacher Smith", "smith@example.com");
-        const headTeacher2 = new HeadTeacher(2, "Teacher Jones", "jones@example.com");
-        headTeacherContainer.addHeadTeacher(headTeacher1);
-        headTeacherContainer.addHeadTeacher(headTeacher2);
-
-        // Populate the select dropdown in the modal:
-        let options = '';
-        headTeacherContainer.getAllHeadTeachers().forEach(ht => {
-            options += `<option value="${ht.name}">${ht.name}</option>`;
+        $.ajax({
+            type: "GET",
+            url: "../backend/api/teachers/get_teachers.php",
+            dataType: 'json',
+            success: function (data) {
+                headTeacherContainer.empty();
+                data.forEach(function (teacherData) {
+                    let teacher = new HeadTeacher(
+                        teacherData.teacher_id,
+                        teacherData.name,
+                        teacherData.email,
+                        teacherData.phone
+                    );
+                    headTeacherContainer.addHeadTeacher(teacher);
+                });
+                // Populate the select dropdown in the modal:
+                let options = '';
+                console.log(headTeacherContainer.getAllHeadTeachers());
+                headTeacherContainer.getAllHeadTeachers().forEach(ht => {
+                    options += `<option value="${ht.name}">${ht.name}</option>`;
+                });
+                $('#headTeacherSelect').html(options);
+            },
+            error: function (xhr, status, error) {
+                console.error("Hiba a tanárok lekérése közben:", xhr, status, error);
+                let errorMessage = "Ismeretlen hiba történt.";
+                if (xhr.status === 500) {
+                    errorMessage = "Szerverhiba történt. Kérlek, próbáld újra később.";
+                }
+                alert("Hiba: " + errorMessage);
+            }
         });
-        $('#headTeacherSelect').html(options);
+
     }
     function loadStudentsIntoSelect() {
         let options = '<option value="">Válassz diákot</option>';
