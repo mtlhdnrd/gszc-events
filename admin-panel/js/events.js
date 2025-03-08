@@ -292,10 +292,7 @@ $(document).ready(function () {
                 maxId = event.id;
             }
         });
-        let newId = maxId + 1;
-        const newEvent = new Event(newId, eventData.name, eventData.date, eventData.location, eventData.loadLevel, eventData.status);
-        eventContainer.addEvent(newEvent);
-        addEventRow(newEvent); // Add to DOM
+
         $('#newEventModal').modal('hide');
         $('#newEventForm')[0].reset();
         $.ajax({
@@ -306,6 +303,10 @@ $(document).ready(function () {
             success: function (data, textStatus, xhr) {
                 console.log("Sikeres hozzáadás:", data);
                 alert("Esemény sikeresen hozzáadva");
+                let newId = maxId + 1;
+                const newEvent = new Event(newId, eventData.name, eventData.date, eventData.location, eventData.loadLevel, eventData.status);
+                eventContainer.addEvent(newEvent);
+                addEventRow(newEvent); // Add to DOM
 
             },
             error: function (xhr, status, error) {

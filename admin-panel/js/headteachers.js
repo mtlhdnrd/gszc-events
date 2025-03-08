@@ -73,7 +73,7 @@ $(document).ready(function() {
             if(headTeacherContainer.removeHeadTeacherById(headTeacherId)){ //remove from container
                 row.remove();
                  alert("Head teacher removed! (Replace this with AJAX)");
-                 //TODO: Add ajax call
+                 //TODO: Add ajax call remove headteacher
             } else {
                  console.error("Head teacher with ID " + headTeacherId + " not found for deletion.");
             }
@@ -116,6 +116,10 @@ $(document).ready(function() {
         $('#newHeadTeacherModal').modal('hide'); //hide modal
          alert("Head teacher added! (Replace this with AJAX)");
         // TODO: make ajax call for adding new head teacher
+        $.ajax({
+            type: "POST",
+            
+        });
 
     }
 
