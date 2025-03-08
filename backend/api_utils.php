@@ -11,7 +11,6 @@
             default:
                 return false;
         }
-
         return $_SERVER["REQUEST_METHOD"] == $method && count($method_superglobal) == count($params) && array_walk($params, function($param) {
             return isset($method_superglobal[$param]);
         });

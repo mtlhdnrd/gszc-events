@@ -19,6 +19,15 @@ class Event {
         if (newData.loadLevel) this.loadLevel = newData.loadLevel;
         if (newData.status) this.status = newData.status;
     }
+    toJson() {
+        return {
+            name: this.name,
+            date: this.date,
+            location: this.location,
+            status: this.status,
+            busyness: this.loadLevel == "magas" ? "high" : "low"
+        };
+    }
 }
 class EventContainer {
     constructor() {
@@ -110,7 +119,7 @@ $(document).ready(function () {
         // Update the event in the container
         if (eventContainer.updateEvent(eventId, updatedData)) {
             console.log("Event updated in container.  Ready to save to server:", eventId, updatedData);
-             //TODO: Make AJAX call for update
+            //TODO: Make AJAX call for update
             row.find('input.event-data, select.event-status').attr('readonly', true);
             row.find('select.event-status').prop('disabled', true);
             row.find('.edit-button').text('Szerkesztés');
@@ -138,8 +147,23 @@ $(document).ready(function () {
 
     function handleDeleteClick() {
         let row = $(this).closest('tr');
+        let id = parseInt(row.find('td:first-child').text());
         if (confirm('Biztosan törölni szeretnéd?')) {
-            row.remove();  //TODO: AJAX Delete event
+            $.ajax({
+                type: "POST",
+                url: "../backend/api/events/delete_event.php",
+                dataType: 'json',
+                data: {'event_id':id},
+                success: function(data){
+                    row.remove();
+                    console.log(data.message);
+                },
+                error: function (xhr, status, error) {
+                    console.error("Error fetching events:", error);
+                    alert("Hiba történt az események betöltésekor. Kérlek, próbáld újra később.");
+                }
+
+            });
         }
     }
 
@@ -171,25 +195,50 @@ $(document).ready(function () {
 
     function loadEvents() {
         $('#eventsTable tbody').empty();
-        eventContainer.getAllEvents().forEach(function (event) {
-            addEventRow(event);
-        });
 
+        $.ajax({
+            type: "GET",
+            url: "../backend/api/events/get_events.php",
+            dataType: 'json',
+            success: function (data) {
+                eventContainer.events = [];
+
+                data.forEach(function (eventData) {
+                    const event = new Event(
+                        eventData.event_id,
+                        eventData.name,
+                        eventData.date,
+                        eventData.location,
+                        eventData.busyness,
+                        eventData.status
+                    );
+                    eventContainer.addEvent(event);
+                });
+
+                eventContainer.getAllEvents().forEach(function (event) {
+                    addEventRow(event);
+                });
+            },
+            error: function (xhr, status, error) {
+                console.error("Error fetching events:", error);
+                alert("Hiba történt az események betöltésekor. Kérlek, próbáld újra később.");
+            }
+        });
     }
 
     function addEventRow(event) {
         let row = $('<tr>');
-    
+
         // --- Hidden ID Cell ---
         let hiddenIdCell = $('<td hidden>').append($('<span class="event-id">' + event.id + '</span>'));
         row.append(hiddenIdCell);
-    
+
         // --- Data Cells ---
         row.append($('<td>').append($('<input type="text" class="form-control event-data" data-field="name" readonly>').val(event.name)));
         row.append($('<td>').append($('<input type="text" class="form-control event-data" data-field="date" readonly>').val(event.date)));
         row.append($('<td>').append($('<input type="text" class="form-control event-data" data-field="location" readonly>').val(event.location)));
         row.append($('<td>').append($('<input type="text" class="form-control event-data" data-field="loadLevel" readonly>').val(event.loadLevel)));
-    
+
         // --- Status Dropdown (Corrected) ---
         let statusSelect = $('<select class="form-control event-status" data-field="status" disabled></select>');
         // Helper function to create option elements
@@ -200,19 +249,19 @@ $(document).ready(function () {
             }
             return option;
         }
-    
+
         statusSelect.append(createOption('pending', 'Függőben', event.status === 'pending'));
         statusSelect.append(createOption('ready', 'Sikeres', event.status === 'ready'));
         statusSelect.append(createOption('failed', 'Sikertelen', event.status === 'failed'));
         row.append($('<td>').append(statusSelect)); // Add the status select
-    
+
         // --- Actions Cell ---
         let actionsCell = $('<td>');
         let editButton = $(`<button class="btn btn-primary btn-sm edit-button" id="edit-event-btn-${event.id}">Szerkesztés</button>`);
         let deleteButton = $(`<button class="btn btn-danger btn-sm delete-button" id="delete-event-btn-${event.id}">Törlés</button>`);
         actionsCell.append(editButton, deleteButton);
         row.append(actionsCell);
-    
+
         // --- Add Row and Set Color ---
         $('#eventsTable tbody').append(row);
         updateRowVisuals(row, event.status); // Set initial color based on status
@@ -220,7 +269,7 @@ $(document).ready(function () {
     function updateRowVisuals(row, status) {
         // Remove existing status classes from ALL td elements within the row
         row.find('td').removeClass('status-pending status-ready status-failed');
-    
+
         // Add the appropriate status class to ALL td elements within the row
         switch (status) {
             case 'pending':
@@ -249,9 +298,45 @@ $(document).ready(function () {
         addEventRow(newEvent); // Add to DOM
         $('#newEventModal').modal('hide');
         $('#newEventForm')[0].reset();
+        $.ajax({
+            type: "POST",
+            url: "../backend/api/events/add_event.php",
+            dataType: 'json',
+            data: newEvent.toJson(),
+            success: function (data, textStatus, xhr) {
+                console.log("Sikeres hozzáadás:", data);
+                alert("Esemény sikeresen hozzáadva");
 
-        //TODO: Send AJAX for new event
-        alert("Esemény sikeresen hozzáadva");
+            },
+            error: function (xhr, status, error) {
+                console.error("Hiba történt az esemény hozzáadása közben:", xhr, status, error);
+        
+                let errorMessage = "Ismeretlen hiba történt."; // Default error message
+        
+                if (xhr.status === 0) {
+                    errorMessage = "Nincs kapcsolat a szerverrel. Ellenőrizd az internetkapcsolatodat.";
+                } else if (xhr.status === 400) { 
+                    try {
+                        let errorData = JSON.parse(xhr.responseText);
+                        if (errorData && errorData.message) {
+                            errorMessage = errorData.message;
+                        } else {
+                            errorMessage = "Érvénytelen adatok lettek elküldve.";
+                        }
+                    } catch (e) {
+                        errorMessage = "Érvénytelen adatok lettek elküldve.";
+                    }
+                } else if (xhr.status === 404) {
+                    errorMessage = "A kért erőforrás nem található (404).";
+                } else if (xhr.status === 500) {
+                    errorMessage = "Szerverhiba történt (500). Kérlek, próbáld újra később.";
+                } else {
+                    errorMessage = `Hiba történt: ${status} - ${error}`;
+                }
+        
+                alert("Hiba az esemény hozzáadásakor: " + errorMessage);
+            }
+        });
     }
 
     function setupEventDelegation() {
