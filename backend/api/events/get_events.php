@@ -8,6 +8,7 @@
         $stmt = $conn->prepare($query);
         if($stmt->execute()) {
             echo json_encode($stmt->get_result()->fetch_all(MYSQLI_ASSOC));
+            http_response_code(200);
         } else {
             echo $stmt->error;
             http_response_code(500);
