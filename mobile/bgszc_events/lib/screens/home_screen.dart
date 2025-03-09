@@ -49,36 +49,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-
-  // Tesztadatok betöltése
-  Future<void> _loadTestData() async {
-    setState(() {
-      _isLoading = true; // Betöltés jelző (opcionális)
-    });
-
-    // Szimuláljuk a hálózati késleltetést (hogy lássuk a betöltés jelzőt)
-    await Future.delayed(Duration(seconds: 1));
-
-    // Létrehozzuk a teszt Invitation objektumot
-    _invitation = Invitation(
-      invitationId: 123,
-      eventWorkshopId: 456,
-      studentId: 789,
-      date: DateTime.now(),
-      studentUsername: 'teszt.user',
-      status:
-          'pending', // Változtasd 'accepted', 'rejected', 'reaccepted'-re, hogy lásd a különbséget
-      eventName: 'Teszt Esemény',
-      workshopName: 'Teszt Foglalkozás',
-    );
-
-    _user = User(username: "Teszt User", password: ""); //Teszt user
-
-    setState(() {
-      _isLoading = false; // Betöltés jelző kikapcsolása
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -107,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return InvitationCard(
         invitation: _invitation!,
         onRefresh:
-            _loadTestData, // Amikor elfogad/elutasít, a tesztadatokat töltjük be újra
+            _loadData, // Amikor elfogad/elutasít, a tesztadatokat töltjük be újra
       );
     }
   }

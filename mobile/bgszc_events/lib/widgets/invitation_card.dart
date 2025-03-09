@@ -44,7 +44,8 @@ class InvitationCard extends StatelessWidget {
           ElevatedButton(
             onPressed: () async {
               try {
-                await _invitationService.acceptInvitation(invitation.invitationId);
+                await _invitationService.updateInvitationStatus(
+                    invitation.invitationId, 'accepted'); // HELYES hívás
                 onRefresh();
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -58,7 +59,8 @@ class InvitationCard extends StatelessWidget {
           ElevatedButton(
             onPressed: () async {
               try {
-                await _invitationService.rejectInvitation(invitation.invitationId);
+                await _invitationService.updateInvitationStatus(
+                    invitation.invitationId, 'rejected'); // HELYES hívás
                 onRefresh();
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -72,35 +74,33 @@ class InvitationCard extends StatelessWidget {
         ],
       );
     } else {
-      // ... (a többi része változatlan) ...
       String statusText;
       Color backgroundColor;
 
       if (invitation.status == 'accepted') {
         statusText = 'Elfogadva';
-        backgroundColor = Colors.green[100]!; // Világosabb zöld
+        backgroundColor = Colors.green[100]!;
       } else if (invitation.status == 'rejected') {
         statusText = 'Elutasítva';
-        backgroundColor = Colors.red[100]!; // Világosabb piros
+        backgroundColor = Colors.red[100]!;
       } else if (invitation.status == 'reaccepted') {
         statusText = 'Újra elfogadva';
         backgroundColor = Colors.green[100]!;
-      }
-      else {
+      } else {
         statusText = 'Ismeretlen státusz';
-        backgroundColor = Colors.grey[300]!; // Szürke, ha ismeretlen
+        backgroundColor = Colors.grey[300]!;
       }
 
       return Container(
         padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         decoration: BoxDecoration(
           color: backgroundColor,
-          borderRadius: BorderRadius.circular(8), // Lekerekített sarkok
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
           statusText,
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center, // Középre igazított szöveg
+          textAlign: TextAlign.center,
         ),
       );
     }
