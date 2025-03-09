@@ -521,25 +521,48 @@ $(document).ready(function () {
             alert("Kérlek válassz diákot és foglalkozást!");
             return;
         }
-
+    
         //Get student and occupation objects
         let student = studentContainer.getStudentById(parseInt(studentId));
         let occupation = occupationContainer.getOccupationById(parseInt(occupationId));
-
+    
         if (!student || !occupation) {
             console.error("Student or occupation not found");
             return;
         }
-
+    
         //Create new StudentOccupation object
-        const studentOccupation = new StudentOccupation(parseInt(studentId), student.username, student.name, parseInt(occupationId), occupation.name);
-        studentOccupationContainer.addStudentOccupation(studentOccupation); //add to container
-        //TODO: Add ajax
-        console.log("Adding occupation to student:", { studentId, occupationId });
-        alert("Adding occupation to student! (Replace this with AJAX)");
-        //Clear form (optional)
-        $('#studentSelect').val('');
-        $('#occupationSelect').val('');
+        const studentOccupation = new StudentOccupation(parseInt(studentId), student.username, student.name, parseInt(occupationId), occupation.occupationName);
+    
+    
+        $.ajax({
+            url: "../backend/api/student_workshops/add_student_workshop.php",
+            type: "POST",
+            data: {
+                user_id: studentOccupation.studentId, 
+                workshop_id: studentOccupation.occupationId
+            },
+            success: function(response) {
+                const newMentorWorkshopId = parseInt(response);
+                studentOccupationContainer.addStudentOccupation(studentOccupation);
+                console.log("Student-Workshop association added with ID:", newMentorWorkshopId);
+                alert("Mentor-foglalkozás sikeresen felvéve!");
+    
+                $('#studentSelect').val('');
+                $('#occupationSelectStudent').val(''); 
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.error("Error adding student-workshop association:", textStatus, errorThrown, jqXHR.responseText);
+    
+                if (jqXHR.status === 400) {
+                    alert("Invalid input.  Please check the data.");
+                } else if(jqXHR.status === 409){
+                    alert("Student workshop already exists")
+                }else{
+                    alert("Failed to add student-workshop association. Error: " + jqXHR.status);
+                }
+            }
+        });
     }
     return {
         // ... other exports ...
