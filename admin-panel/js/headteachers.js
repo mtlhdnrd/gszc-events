@@ -204,6 +204,7 @@ $(document).ready(function () {
             data: headteacherData,
             success: function (data) {
                 console.log(data.message);
+                $(document).trigger('headTeacherAdded', [headTeacherContainer]);
             }
         });
 

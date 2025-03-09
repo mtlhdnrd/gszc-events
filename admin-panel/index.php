@@ -183,7 +183,6 @@
                     <tr>
                         <th>Azonosító</th>
                         <th>Felhasználónév</th>
-                        <th>Jelszó</th>
                         <th>Név</th>
                         <th>Email</th>
                         <th>Osztályfőnök</th>
