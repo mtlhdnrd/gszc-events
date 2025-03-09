@@ -3,16 +3,10 @@ require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/config.php";
 require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/api_utils.php";
 
 if (validate_request("POST", array("teacher_id", "name", "email", "phone"))) {
-    $teacher_id = $_POST["teacher_id"];
-    $name = $_POST["name"];
-    $email = $_POST["email"];
-    $phone = $_POST["phone"];
-
-    if (!is_numeric($teacher_id)) {
-        http_response_code(400); // Bad Request
-        echo json_encode(['message' => 'Érvénytelen tanár azonosító.']);
-        exit;
-    }
+    $teacher_id = intval($_POST["teacher_id"]);
+    $name = htmlspecialchars($_POST["name"]);
+    $email = htmlspecialchars($_POST["email"]);
+    $phone = htmlspecialchars($_POST["phone"]);
 
     $errors = [];
 
