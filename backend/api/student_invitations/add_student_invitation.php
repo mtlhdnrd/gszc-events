@@ -2,10 +2,11 @@
 require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/config.php";
 require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/api_utils.php";
 
-if (validate_request("POST", array("event_workshop_id", "user_id", "status"))) {
+if (validate_request("POST", array("event_workshop_id", "user_id", "ranking_number", "status"))) {
 
     $event_workshop_id = intval($_POST["event_workshop_id"]);
     $user_id = intval($_POST["user_id"]);
+    $ranking_number = intval($_POST["ranking_number"]);
     $status = $_POST["status"];
 
     // --- Input Validation ---
@@ -58,9 +59,9 @@ if (validate_request("POST", array("event_workshop_id", "user_id", "status"))) {
     $check_duplicate_stmt->close();
 
     // --- Insert into `student_invitations` ---
-    $query = "INSERT INTO `student_invitations` (`event_workshop_id`, `user_id`, `status`) VALUES (?, ?, ?);";
+    $query = "INSERT INTO `student_invitations` (`event_workshop_id`, `user_id`,`ranking_number`, `status`) VALUES (?, ?, ?, ?);";
     $stmt = $conn->prepare($query);
-    $stmt->bind_param("iis", $event_workshop_id, $user_id, $status);
+    $stmt->bind_param("iiis", $event_workshop_id, $user_id, $ranking_number, $status);
 
     if ($stmt->execute()) {
         echo $stmt->insert_id; // Return the ID of the newly created row
