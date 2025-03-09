@@ -103,6 +103,9 @@ $(document).ready(function () {
     $('#occupationsTable tbody').on('click', '.delete-button', handleDeleteOccupationClick);
     $('#eventOccupationsTable tbody').on('click', '.delete-event-occupation-button', handleDeleteEventOccupationClick);
 
+    $(document).on('eventAdded', loadEventsIntoSelect); //TODO: REFACTOR get a eventContainer parameter, so it doesnt need to call ajax again in the function
+    $(document).on('workshopAdded', loadOccupations);
+
     $('#addOccupationToEventBtn').click(handleAddOccupationToEvent);
     $('#newOccupationEventBtn').click(showAddOccupationEventForm);
     $('#addOccupationBtn').click(handleAddOccupation);
@@ -117,7 +120,7 @@ $(document).ready(function () {
 
     // --- Function Definitions ---
 
-    function handleAddOccupation() { //FIXME: Not being called
+    function handleAddOccupation() {
         let occupationName = $('#newOccupationName').val().trim();
 
         if (!occupationName) {
@@ -135,16 +138,14 @@ $(document).ready(function () {
 
         const newOccupation = new Occupation(newId, occupationName);
 
-        occupationContainer.addOccupation(newOccupation);
         $('#newOccupationName').val('');
         $.ajax({
             type: "POST",
             url: "../backend/api/workshops/add_workshop.php",
             data: newOccupation.toJson(),
             success: function (data) {
-                alert("Foglalkozás hozzáadva");
-                addOccupationRow(newOccupation);
-
+                occupationContainer.addOccupation(newOccupation);
+                $(document).trigger('workshopAdded', [newOccupation]);
             },
             error: function (xhr, status, error) {
                 console.error("Hiba a foglalkozás frissítése közben:", xhr, status, error);
@@ -193,6 +194,7 @@ $(document).ready(function () {
                     row.find('input.occupation-data').attr('readonly', true);
                     row.find('.edit-button').text('Szerkesztés');
                     row.find('.cancel-button').remove();
+                    loadOccupations();
                 },
                 error: function (xhr, status, error) {
                     console.error("Hiba a foglalkozás frissítése közben:", xhr, status, error);
@@ -233,7 +235,6 @@ $(document).ready(function () {
     function handleDeleteOccupationClick() {
         let row = $(this).closest('tr');
         let occupationId = parseInt(row.find('.occupation-id').text(), 10);
-
         if (confirm('Biztosan törölni szeretnéd?')) {
             $.ajax({
                 type: "DELETE",
@@ -241,7 +242,8 @@ $(document).ready(function () {
                 success: function (response) {
                     if (occupationContainer.removeOccupationById(occupationId)) {
                         row.remove();
-                        alert("Foglalkozás sikeresen törölve!");
+                        loadOccupations();
+                        loadOccupationsIntoSelect();
                     } else {
                         console.error("Occupation with ID " + occupationId + " not found locally.");
                         alert("Foglalkozás nem található.");
@@ -294,7 +296,6 @@ $(document).ready(function () {
         });
     }
     function loadEventsIntoSelect() {
-        // TODO: Replace with AJAX
         $.ajax({
             type: "GET",
             url: "../backend/api/events/get_events.php",
