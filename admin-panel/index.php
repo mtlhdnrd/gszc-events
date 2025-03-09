@@ -162,6 +162,7 @@
                         <th>Esemény neve</th>
                         <th>Foglalkozás neve</th>
                         <th>Szükséges mentorok</th>
+                        <th>Dolgozható órák</th>
                         <th>Műveletek</th>
                     </tr>
                 </thead>

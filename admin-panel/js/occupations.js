@@ -62,6 +62,15 @@ class EventOccupation {
         this.mentorCount = mentorCount;
         this.hoursCount = hoursCount;
     }
+    toJson() {
+        return {
+            event_workshop_id: this.eventOccupationId,
+            evenet_id: this.eventId,
+            workshop_id: this.occupationId,
+            hours_count: this.hoursCount,
+            mentor_count: this.mentorCount
+        };
+    }
 }
 
 class EventOccupationContainer {
@@ -263,14 +272,41 @@ $(document).ready(function () {
         if (confirm('Biztosan törölni szeretnéd?')) {
             let eventOccupationId = parseInt(row.find('.event-occupation-id').text(), 10); // Get by ID
 
-            if (eventOccupationContainer.removeEventOccupationById(eventOccupationId)) { // Remove by ID
-                row.remove();
-                console.log("Event-Occupation removed");
-                alert("Event-Occupation removed! (Replace this with AJAX)"); // Replace with AJAX
-                // TODO: Add AJAX call to php/delete_esemeny_foglalkozas.php
-            } else {
-                console.error("Event-Occupation not found for deletion.");
-            }
+            // AJAX call to delete the event_workshop
+            $.ajax({
+                type: "DELETE",
+                url: `../backend/api/event_workshops/delete_event_workshop.php?event_workshop_id=${eventOccupationId}`,
+                success: function (response, textStatus, jqXHR) { 
+                    if (jqXHR.status === 204) {
+                        if (eventOccupationContainer.removeEventOccupationById(eventOccupationId)) {
+                            row.remove();
+                            console.log("Event-Occupation removed");
+                        } else {
+                            console.error("Event-Occupation not found locally for deletion.");
+                            alert("Event-Occupation deleted from the server, but not found locally. Please refresh.");
+                        }
+
+                    } else {
+                        console.error("Unexpected success status:", jqXHR.status);
+                        alert("An unexpected error occurred.  Status: " + jqXHR.status);
+                    }
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    // Handle errors
+                    console.error("Error deleting event workshop:", textStatus, errorThrown, jqXHR.status, jqXHR.responseText);
+                    if (jqXHR.status === 404) {
+                        alert("Event-Occupation not found on the server.");
+                        if (eventOccupationContainer.removeEventOccupationById(eventOccupationId)) {
+                            row.remove(); 
+                        }
+                    } else if (jqXHR.status === 400) {
+                        alert("Invalid request.  Please check the data.");
+                    }
+                    else {
+                        alert("Failed to delete event workshop.  Error: " + jqXHR.status);
+                    }
+                }
+            });
         }
     }
 
@@ -332,21 +368,37 @@ $(document).ready(function () {
         occupationContainer.getAllOccupations().forEach(occupation => {
             options += `<option value="${occupation.id}">${occupation.name}</option>`;
         });
-        $('#occupationSelectEvent').html(options); // Use the correct ID!
+        $('#occupationSelectEvent').html(options);
     }
 
     function loadEventOccupations() {
-        // TODO: Replace with AJAX call to php/get_esemeny_foglalkozasok.php
-        // Placeholder data:
+        $.ajax({
+            url: "../backend/api/event_workshops/get_event_workshops.php",
+            type: "GET",
+            dataType: "json",
+            success: function (data) {
+                $('#eventOccupationsTable tbody').empty();
+                eventOccupationContainer.eventOccupations = [];
 
-        const eo1 = new EventOccupation(1, 1, "Dance Rehearsal", 1, "Lego Robot", 2, 4);
-        const eo2 = new EventOccupation(2, 2, "Poetry Slam", 2, "Áramkör építés", 5, 2);
-        eventOccupationContainer.addEventOccupation(eo1);
-        eventOccupationContainer.addEventOccupation(eo2);
+                data.forEach(function (eventWorkshop) {
+                    const eo = new EventOccupation(
+                        eventWorkshop.event_workshop_id,
+                        eventWorkshop.event_id,
+                        eventWorkshop.event_name,
+                        eventWorkshop.workshop_id,
+                        eventWorkshop.workshop_name,
+                        eventWorkshop.number_of_mentors_required,
+                        eventWorkshop.max_workable_hours
+                    );
 
-        $('#eventOccupationsTable tbody').empty();
-        eventOccupationContainer.getAllEventOccupations().forEach(function (eventOccupation) {
-            addEventOccupationRow(eventOccupation);
+                    eventOccupationContainer.addEventOccupation(eo);
+                    addEventOccupationRow(eo);
+                });
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.error("Error loading event workshops:", textStatus, errorThrown);
+                alert("Failed to load event workshops. Please try again later.");
+            }
         });
     }
 
@@ -388,13 +440,12 @@ $(document).ready(function () {
         loadOccupationsIntoSelect();
         $('#addOccupationEventForm').show();
     }
-    //--Add Event Occupation Handler--
     function handleAddOccupationToEvent() {
         let eventId = $('#eventSelect').val();
         let occupationId = $('#occupationSelectEvent').val();
         let mentorCount = $('#mentorCount').val();
         let hoursCount = $('#hoursCount').val();
-
+    
         if (!eventId || !occupationId || !mentorCount || !hoursCount) {
             alert('Kérlek válassz eseményt, foglalkozást, és add meg a szükséges mentorok számát és óraszámot!');
             return;
@@ -407,30 +458,48 @@ $(document).ready(function () {
             alert('A szükséges mentorok száma egy 0-nál nagyobb szám kell, hogy legyen!');
             return;
         }
-
+    
         let event = eventContainer.getEventById(parseInt(eventId));
         let occupation = occupationContainer.getOccupationById(parseInt(occupationId));
         if (!event || !occupation) {
             console.error("Event or occupation not found")
             return;
         }
-
-        // Find the next available ID
-        let maxId = 0;
-        eventOccupationContainer.getAllEventOccupations().forEach(function (eo) {
-            if (eo.eventOccupationId > maxId) {
-                maxId = eo.eventOccupationId;
+    
+        // Create the EventOccupation object *before* the AJAX call
+        const eventOccupation = new EventOccupation(
+            null, 
+            parseInt(eventId),
+            event.name, 
+            parseInt(occupationId),
+            occupation.name, 
+            parseInt(mentorCount),
+            parseInt(hoursCount)
+        );
+    
+        $.ajax({
+            url: "../backend/api/event_workshops/add_event_workshop.php",
+            type: "POST",
+            data: {
+                event_id: eventOccupation.eventId,  
+                workshop_id: eventOccupation.occupationId,
+                max_workable_hours: eventOccupation.hoursCount,
+                number_of_mentors_required: eventOccupation.mentorCount
+            },
+            success: function(response) {
+                const newEventWorkshopId = parseInt(response);
+                eventOccupation.eventOccupationId = newEventWorkshopId;
+    
+                eventOccupationContainer.addEventOccupation(eventOccupation);
+                addEventOccupationRow(eventOccupation);
+                $(document).trigger('eventWorkshopAdded', [eventOccupationContainer]);
+                console.log("Event-Occupation added with ID:", newEventWorkshopId);    
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.error("Error adding event workshop:", textStatus, errorThrown, jqXHR.responseText);
+                alert("Failed to add event workshop.  Error: " + jqXHR.status + " - " + jqXHR.responseText); // Show detailed error
             }
         });
-        let newId = maxId + 1;
-        const eventOccupation = new EventOccupation(newId, parseInt(eventId), event.name, parseInt(occupationId), occupation.name, parseInt(mentorCount), parseInt(hoursCount));
-        eventOccupationContainer.addEventOccupation(eventOccupation);
-
-        addEventOccupationRow(eventOccupation); // Add to the DOM
-        console.log("Adding occupation to event:", { eventId, occupationId, mentorCount, hoursCount });
-        alert("Adding occupation to event (Replace this with AJAX)");
-        // TODO: AJAX call to php/add_esemeny_foglalkozas.php
-
     }
     return {
         Occupation: Occupation,
