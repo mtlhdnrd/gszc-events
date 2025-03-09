@@ -165,6 +165,7 @@ $(document).ready(function () {
     $(document).on('headTeacherAdded', loadHeadTeachers);
     $(document).on('headTeacherAdded', loadStudents);
     $(document).on('studentAdded', loadStudents);
+    $(document).on('workshopAdded', loadOccupationsIntoSelect);
 
 
     // --- Load Initial Data ---
@@ -427,7 +428,6 @@ $(document).ready(function () {
                     headTeacherContainer.addHeadTeacher(teacher);
                 });
                 let options = '';
-                console.log(headTeacherContainer.getAllHeadTeachers());
                 headTeacherContainer.getAllHeadTeachers().forEach(ht => {
                     options += `<option value="${ht.id}">${ht.name}</option>`;
                 });
@@ -451,12 +451,29 @@ $(document).ready(function () {
         });
         $('#studentSelect').html(options);
     }
-    function loadOccupationsIntoSelect() { //from occupations.js
-        let options = '<option value="">Válassz foglalkozást</option>';
-        occupationContainer.getAllOccupations().forEach(occupation => {
-            options += `<option value="${occupation.id}">${occupation.name}</option>`;
+    function loadOccupationsIntoSelect() {
+        $.ajax({
+            url: '../backend/api/workshops/get_workshops.php',
+            type: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                $('#occupationsTable tbody').empty();
+                occupationContainer.occupations = [];
+                data.forEach(function (occupationData) {
+                    const occupation = new Occupation(occupationData.workshop_id, occupationData.name, occupationData.description);
+                    occupationContainer.addOccupation(occupation);
+                });
+                let options = '<option value="">Válassz foglalkozást</option>';
+                occupationContainer.getAllOccupations().forEach(occupation => {
+                    options += `<option value="${occupation.id}">${occupation.name}</option>`;
+                });
+                $('#occupationSelectStudent').html(options);
+            },
+            error: function (xhr, status, error) {
+                console.error("Error loading occupations:", status, error);
+                alert("Hiba történt a foglalkozások betöltésekor. Kérlek próbáld újra később.");
+            }
         });
-        $('#occupationSelectStudent').html(options);
     }
 
     // -- Add Row Function --
