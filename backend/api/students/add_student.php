@@ -97,10 +97,10 @@ if (validate_request("POST", array("username", "password", "name", "email", "tea
 
     try {
         // 1. Insert into `users` table
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT); // Hash the password!
+        //$hashed_password = password_hash($password, PASSWORD_DEFAULT); // Hash the password!
         $insert_user_query = "INSERT INTO `users` (`username`, `password`) VALUES (?, ?)";
         $insert_user_stmt = $conn->prepare($insert_user_query);
-        $insert_user_stmt->bind_param("ss", $username, $hashed_password);
+        $insert_user_stmt->bind_param("ss", $username, $password);
         $insert_user_stmt->execute();
         $user_id = $insert_user_stmt->insert_id;  // Get the newly created user_id
         $insert_user_stmt->close();
