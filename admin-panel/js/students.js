@@ -1,22 +1,23 @@
+
 // --- Student Class and Container ---
 class Student {
-    constructor(id, username, password, name, email, headTeacherName, schoolName, schoolId, totalHoursWorked) {
+    constructor(id, username, name, email, headTeacherName, headTeacherId, schoolName, schoolId, totalHoursWorked) {
         this.id = id;
         this.username = username;
-        this.password = password;
         this.name = name;
         this.email = email;
         this.headTeacherName = headTeacherName;
+        this.headTeacherId = headTeacherId;
         this.schoolName = schoolName;
         this.schoolId = schoolId; // OM azonosító
         this.totalHoursWorked = totalHoursWorked;
     }
     update(newData) {
         if (newData.username) this.username = newData.username;
-        if (newData.password) this.password = newData.password;
         if (newData.name) this.name = newData.name;
         if (newData.email) this.email = newData.email;
         if (newData.headTeacherName) this.headTeacherName = newData.headTeacherName;
+        if (newData.headTeacherId) this.headTeacherId = newData.headTeacherId;
         if (newData.schoolName) this.schoolName = newData.schoolName;
         if (newData.schoolId) this.schoolId = newData.schoolId;
         // totalHoursWorked is *not* updated here - it should be updated through a separate mechanism
@@ -161,6 +162,11 @@ $(document).ready(function () {
     $('#saveNewStudentBtn').click(handleSaveNewStudent); //modal save button
     $('#addStudentOccupationBtn').click(handleAddStudentOccupation); //add student occupation button
 
+    $(document).on('headTeacherAdded', loadHeadTeachers);
+    $(document).on('headTeacherAdded', loadStudents);
+    $(document).on('studentAdded', loadStudents);
+    $(document).on('workshopAdded', loadOccupationsIntoSelect);
+
 
     // --- Load Initial Data ---
     loadHeadTeachers(); // Load head teachers *first* (needed for the dropdown)
@@ -196,30 +202,72 @@ $(document).ready(function () {
     function finishEditingStudent(row) {
         let updatedData = { //get data
             username: row.find('input[data-field="username"]').val(),
-            password: row.find('input[data-field="password"]').val(), // Hash this on the server!
             name: row.find('input[data-field="name"]').val(),
             email: row.find('input[data-field="email"]').val(),
-            headTeacherName: row.find('.head-teacher-select').val(),
-            schoolName: row.find('input[data-field="schoolName"]').val(),
-            schoolId: row.find('input[data-field="schoolId"]').val()
+            teacher_id: row.find('.head-teacher-select').val(),
         };
-
+    
         let studentId = parseInt(row.find('.student-id').text(), 10);
-
-        if (studentContainer.updateStudent(studentId, updatedData)) {
-            console.log("Student updated in container. Ready to save to server:", studentId, updatedData);
-            alert("Student updated! (Replace this with AJAX)"); // Replace with AJAX call
-            //TODO: Add ajax
-
-            row.find('input.student-data').attr('readonly', true);
-            row.find('.head-teacher-select').prop('disabled', true); // Disable the select
-            row.find('.edit-button').text('Szerkesztés');
-            row.find('.cancel-button').remove();
-
-        } else {
-            console.error("Student with ID " + studentId + " not found for update.");
-            alert("Student with ID " + studentId + " not found for update.");
-        }
+    
+        // Add user_id to updatedData - REQUIRED for the server
+        updatedData.user_id = studentId;
+    
+        // AJAX call to update the student
+        $.ajax({
+            url: "../backend/api/students/update_student.php",
+            type: "POST", 
+            data: updatedData,
+            success: function(response, textStatus, jqXHR) {
+                if (jqXHR.status === 204) {
+                    let student = studentContainer.getStudentById(studentId);
+                    if (student) {
+                        student.username = updatedData.username;
+                        student.name = updatedData.name;
+                        student.email = updatedData.email;
+                        student.headTeacherId = updatedData.teacher_id;
+                        let teacherName = "";
+                        headTeacherContainer.getAllHeadTeachers().forEach(t => {
+                            if(parseInt(t.id) === parseInt(updatedData.teacher_id)){
+                                teacherName = t.name;
+                            }
+                        });
+                        student.headTeacherName = teacherName;
+                     }
+    
+    
+                    row.find('input[data-field="username"]').val(updatedData.username);
+                    row.find('input[data-field="name"]').val(updatedData.name);
+                    row.find('input[data-field="email"]').val(updatedData.email);
+                    row.find('.head-teacher-select').val(updatedData.teacher_id);
+    
+    
+                    row.find('input.student-data').attr('readonly', true);
+                    row.find('.head-teacher-select').prop('disabled', true); 
+                    row.find('.edit-button').text('Szerkesztés');
+                    row.find('.cancel-button').remove();
+    
+    
+                    console.log("Student updated on server:", studentId);
+    
+                } else {
+                    console.error("Unexpected success status:", jqXHR.status);
+                    alert("An unexpected error occurred.  Status: " + jqXHR.status);
+                }
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.error("Error updating student:", textStatus, errorThrown, jqXHR.responseText);
+                if (jqXHR.status === 404) {
+                    alert("Student not found on the server.");
+                } else if (jqXHR.status === 409) {
+                    alert("Username or email already exists.");
+                } else if (jqXHR.status === 400) {
+                    alert("Invalid input. Please check the data.");
+                }
+                else {
+                    alert("Failed to update student. Error: " + jqXHR.status);
+                }
+            }
+        });
     }
 
     function handleCancelStudentClick() {
@@ -236,13 +284,38 @@ $(document).ready(function () {
         let row = $(this).closest('tr');
         if (confirm('Biztosan törölni szeretnéd?')) {
             let studentId = parseInt(row.find('.student-id').text(), 10);
-            if (studentContainer.removeStudentById(studentId)) {
-                row.remove();
-                alert("Student removed! (Replace this with AJAX)"); // Replace with AJAX call
-                //TODO: Add ajax
-            } else {
-                console.error("Student with ID " + studentId + " not found for deletion.");
-            }
+                $.ajax({
+                url: `../backend/api/students/delete_student.php?user_id=${studentId}`,
+                type: "DELETE",
+                success: function(response, textStatus, jqXHR) {
+                    if (jqXHR.status === 204) {
+                        if (studentContainer.removeStudentById(studentId)) {
+                            row.remove();
+                            console.log("Student removed");
+                        } else {
+                             console.error("Student not found locally for deletion.");
+                             alert("Student deleted from the server, but not found locally. Please refresh.");
+                        }
+                    } else {
+                        console.error("Unexpected success status:", jqXHR.status);
+                        alert("An unexpected error occurred.  Status: " + jqXHR.status);
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                  console.error("Error deleting student:", textStatus, errorThrown, jqXHR.status, jqXHR.responseText);
+    
+                    if (jqXHR.status === 404) {
+                        alert("Student not found on the server.");
+                        if (studentContainer.removeStudentById(studentId)) {
+                            row.remove();
+                        }
+                    } else if (jqXHR.status === 400) {
+                        alert("Invalid request. Please check the data.");
+                    } else {
+                        alert("Failed to delete student. Error: " + jqXHR.status);
+                    }
+                }
+            });
         }
     }
     //--Modal functions--
@@ -254,56 +327,91 @@ $(document).ready(function () {
     function handleSaveNewStudent() {
         let studentData = { //get all data from modal
             username: $('#studentUsername').val(),
-            password: $('#studentPassword').val(), // Hash this on the server!
+            password: $('#studentPassword').val(),
             name: $('#studentName').val(),
             email: $('#studentEmail').val(),
-            headTeacherName: $('#headTeacherSelect').val(),
-            schoolName: $('#studentSchoolName').val(),
-            schoolId: $('#studentSchoolId').val(),
-            totalHoursWorked: 0 // Set initial hours to 0
+            teacher_id: $('#headTeacherSelect').val(),
+            school_id: $('#studentSchoolId').val(),
         };
         //Input validation
-        if (!studentData.username || !studentData.password || !studentData.name || !studentData.email || !studentData.headTeacherName || !studentData.schoolName || !studentData.schoolId) {
-            alert('Kérlek tölts ki minden mezőt!'); // Or a more user-friendly message
+        if (!studentData.username || !studentData.password || !studentData.name || !studentData.email || !studentData.teacher_id || !studentData.school_id) {
+            alert('Kérlek tölts ki minden mezőt!'); 
             return;
         }
-        if (isNaN(parseInt(studentData.schoolId))) {
+        if (isNaN(parseInt(studentData.school_id))) {
             alert("Az OM azonosító egy szám kell, hogy legyen!");
             return;
         }
-        // Find the next available ID
-        let maxId = 0;
-        studentContainer.getAllStudents().forEach(function (student) {
-            if (student.id > maxId) {
-                maxId = student.id;
+            $.ajax({
+            url: "../backend/api/students/add_student.php",
+            type: "POST",
+            data: studentData,
+            success: function(response) {
+                const newUserId = parseInt(response);
+                const newStudent = new Student(
+                    newUserId, 
+                    studentData.username,
+                    studentData.name,
+                    studentData.email,
+                    $('#headTeacherSelect').text(), 
+                    studentData.teacher_id,
+                    $('#studentSchoolName').val(), 
+                    studentData.school_id,
+                    0 
+                );
+    
+                studentContainer.addStudent(newStudent);
+                $('#newStudentModal').modal('hide');
+                console.log("Student added with user_id:", newUserId);
+                $(document).trigger('studentAdded', [studentContainer]);
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.error("Error adding student:", textStatus, errorThrown, jqXHR.responseText);
+                if (jqXHR.status === 409) {
+                    alert("Username or email already exists.");
+                } else if (jqXHR.status === 400) {
+                    alert("Invalid input.  Please check the data.");
+                } else {
+                    alert("Failed to add student.  Error: " + jqXHR.status + " " + jqXHR.responseText);
+                }
             }
         });
-        let newId = maxId + 1;
-        // Create a new Student object
-        const newStudent = new Student(newId, studentData.username, studentData.password, studentData.name, studentData.email, studentData.headTeacherName, studentData.schoolName, studentData.schoolId, studentData.totalHoursWorked);
-        studentContainer.addStudent(newStudent); //add to container
-        addStudentRow(newStudent); //add to table
-        $('#newStudentModal').modal('hide'); //hide modal
-        alert("Student added! (Replace this with AJAX)"); // Replace with AJAX
-        //TODO: Add ajax call
     }
     //--Load data--
     function loadStudents() {
-        // TODO: Replace with AJAX call
-        // Placeholder data:
-        const student1 = new Student(1, "user1", "pass1", "John Doe", "john@example.com", "Teacher Smith", "Example School", "12345678901", 10);
-        const student2 = new Student(2, "user2", "pass2", "Jane Doe", "jane@example.com", "Teacher Jones", "Another School", "98765432109", 5);
-        studentContainer.addStudent(student1);
-        studentContainer.addStudent(student2);
-
-        $('#studentsTable tbody').empty();
-        studentContainer.getAllStudents().forEach(function (student) {
-            addStudentRow(student);
+        $.ajax({
+            url: "../backend/api/students/get_students.php",
+            type: "GET",
+            dataType: "json",
+            success: function(data) {
+                $('#studentsTable tbody').empty(); 
+                studentContainer.students = [];
+                data.forEach(function(studentData) {
+                    const student = new Student(
+                        studentData.user_id,
+                        studentData.username,
+                        studentData.student_name,
+                        studentData.email,
+                        studentData.headTeacherName,
+                        studentData.headTeacherId,
+                        studentData.schoolName,
+                        studentData.school_id,
+                        studentData.total_hours_worked
+                    );
+    
+                    studentContainer.addStudent(student);
+                    addStudentRow(student);
+                    loadStudentsIntoSelect();
+                });
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.error("Error loading students:", textStatus, errorThrown, jqXHR.responseText);
+                alert("Failed to load students.  Error: " + jqXHR.status);
+            }
         });
     }
 
     function loadHeadTeachers() {
-        // TODO: Replace with AJAX call
         $.ajax({
             type: "GET",
             url: "../backend/api/teachers/get_teachers.php",
@@ -319,11 +427,9 @@ $(document).ready(function () {
                     );
                     headTeacherContainer.addHeadTeacher(teacher);
                 });
-                // Populate the select dropdown in the modal:
                 let options = '';
-                console.log(headTeacherContainer.getAllHeadTeachers());
                 headTeacherContainer.getAllHeadTeachers().forEach(ht => {
-                    options += `<option value="${ht.name}">${ht.name}</option>`;
+                    options += `<option value="${ht.id}">${ht.name}</option>`;
                 });
                 $('#headTeacherSelect').html(options);
             },
@@ -345,47 +451,66 @@ $(document).ready(function () {
         });
         $('#studentSelect').html(options);
     }
-    function loadOccupationsIntoSelect() { //from occupations.js
-        let options = '<option value="">Válassz foglalkozást</option>';
-        occupationContainer.getAllOccupations().forEach(occupation => {
-            options += `<option value="${occupation.id}">${occupation.name}</option>`;
+    function loadOccupationsIntoSelect() {
+        $.ajax({
+            url: '../backend/api/workshops/get_workshops.php',
+            type: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                $('#occupationsTable tbody').empty();
+                occupationContainer.occupations = [];
+                data.forEach(function (occupationData) {
+                    const occupation = new Occupation(occupationData.workshop_id, occupationData.name, occupationData.description);
+                    occupationContainer.addOccupation(occupation);
+                });
+                let options = '<option value="">Válassz foglalkozást</option>';
+                occupationContainer.getAllOccupations().forEach(occupation => {
+                    options += `<option value="${occupation.id}">${occupation.name}</option>`;
+                });
+                $('#occupationSelectStudent').html(options);
+            },
+            error: function (xhr, status, error) {
+                console.error("Error loading occupations:", status, error);
+                alert("Hiba történt a foglalkozások betöltésekor. Kérlek próbáld újra később.");
+            }
         });
-        $('#occupationSelectStudent').html(options);
     }
 
     // -- Add Row Function --
 
     function addStudentRow(student) {
         let row = $('<tr>');
-        row.append('<td hidden><span class="student-id">' + student.id + '</span></td>');
-        row.append($('<td>').text(student.id));
-        row.append($('<td>').append($('<input type="text" class="form-control student-data" data-field="username" readonly>').val(student.username)));
-        row.append($('<td>').append($('<input type="text" class="form-control student-data" data-field="password" readonly>').val(student.password))); // Show hashed password (or a placeholder)
-        row.append($('<td>').append($('<input type="text" class="form-control student-data" data-field="name" readonly>').val(student.name)));
-        row.append($('<td>').append($('<input type="text" class="form-control student-data" data-field="email" readonly>').val(student.email)));
+    row.append('<td hidden><span class="student-id">' + student.id + '</span></td>');
+    row.append($('<td>').text(student.id));
+    row.append($('<td>').append($('<input type="text" class="form-control student-data" data-field="username" readonly>').val(student.username)));
+    row.append($('<td>').append($('<input type="text" class="form-control student-data" data-field="name" readonly>').val(student.name)));
+    row.append($('<td>').append($('<input type="text" class="form-control student-data" data-field="email" readonly>').val(student.email)));
 
-        // Head teacher dropdown (for editing)
-        let headTeacherSelect = $('<select class="form-control head-teacher-select" disabled></select>'); // Initially disabled
-        headTeacherContainer.getAllHeadTeachers().forEach(ht => { //get all head teachers
-            let option = $('<option>').val(ht.name).text(ht.name);
-            if (ht.name === student.headTeacherName) {
-                option.attr('selected', 'selected'); // Select the current head teacher
-            }
-            headTeacherSelect.append(option);
-        });
-        row.append($('<td>').append(headTeacherSelect));
+    let headTeacherSelect = $('<select class="form-control head-teacher-select" disabled></select>'); // Initially disabled
 
-        row.append($('<td>').append($('<input type="text" class="form-control student-data" data-field="schoolName" readonly>').val(student.schoolName)));
-        row.append($('<td>').append($('<input type="text" class="form-control student-data" data-field="schoolId" readonly>').val(student.schoolId)));
-        row.append($('<td>').text(student.totalHoursWorked)); // Display total hours
+    headTeacherContainer.getAllHeadTeachers().forEach(ht => {
+        let option = $('<option>').val(ht.id).text(ht.name);
 
-        let actionsCell = $('<td>');
-        let editButton = $('<button class="btn btn-primary btn-sm edit-button">Szerkesztés</button>');
-        let deleteButton = $('<button class="btn btn-danger btn-sm delete-button">Törlés</button>');
-        actionsCell.append(editButton, deleteButton);
-        row.append(actionsCell);
+        if (parseInt(ht.id) === parseInt(student.headTeacherId)) {
+            option.prop('selected', true); 
+        }
 
-        $('#studentsTable tbody').append(row);
+        headTeacherSelect.append(option);
+    });
+
+    row.append($('<td>').append(headTeacherSelect));
+
+    row.append($('<td>').append($('<input type="text" class="form-control student-data" data-field="schoolName" readonly>').val(student.schoolName)));
+    row.append($('<td>').append($('<input type="text" class="form-control student-data" data-field="schoolId" readonly>').val(student.schoolId)));
+    row.append($('<td>').text(student.totalHoursWorked)); 
+
+    let actionsCell = $('<td>');
+    let editButton = $('<button class="btn btn-primary btn-sm edit-button">Szerkesztés</button>');
+    let deleteButton = $('<button class="btn btn-danger btn-sm delete-button">Törlés</button>');
+    actionsCell.append(editButton, deleteButton);
+    row.append(actionsCell);
+
+    $('#studentsTable tbody').append(row);
     }
     //--Student Occupation--
 
@@ -396,25 +521,48 @@ $(document).ready(function () {
             alert("Kérlek válassz diákot és foglalkozást!");
             return;
         }
-
+    
         //Get student and occupation objects
         let student = studentContainer.getStudentById(parseInt(studentId));
         let occupation = occupationContainer.getOccupationById(parseInt(occupationId));
-
+    
         if (!student || !occupation) {
             console.error("Student or occupation not found");
             return;
         }
-
+    
         //Create new StudentOccupation object
-        const studentOccupation = new StudentOccupation(parseInt(studentId), student.username, student.name, parseInt(occupationId), occupation.name);
-        studentOccupationContainer.addStudentOccupation(studentOccupation); //add to container
-        //TODO: Add ajax
-        console.log("Adding occupation to student:", { studentId, occupationId });
-        alert("Adding occupation to student! (Replace this with AJAX)");
-        //Clear form (optional)
-        $('#studentSelect').val('');
-        $('#occupationSelect').val('');
+        const studentOccupation = new StudentOccupation(parseInt(studentId), student.username, student.name, parseInt(occupationId), occupation.occupationName);
+    
+    
+        $.ajax({
+            url: "../backend/api/student_workshops/add_student_workshop.php",
+            type: "POST",
+            data: {
+                user_id: studentOccupation.studentId, 
+                workshop_id: studentOccupation.occupationId
+            },
+            success: function(response) {
+                const newMentorWorkshopId = parseInt(response);
+                studentOccupationContainer.addStudentOccupation(studentOccupation);
+                console.log("Student-Workshop association added with ID:", newMentorWorkshopId);
+                alert("Mentor-foglalkozás sikeresen felvéve!");
+    
+                $('#studentSelect').val('');
+                $('#occupationSelectStudent').val(''); 
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.error("Error adding student-workshop association:", textStatus, errorThrown, jqXHR.responseText);
+    
+                if (jqXHR.status === 400) {
+                    alert("Invalid input.  Please check the data.");
+                } else if(jqXHR.status === 409){
+                    alert("Student workshop already exists")
+                }else{
+                    alert("Failed to add student-workshop association. Error: " + jqXHR.status);
+                }
+            }
+        });
     }
     return {
         // ... other exports ...

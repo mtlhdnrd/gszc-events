@@ -112,6 +112,10 @@
 
         <div id="occupations" class="content-section" style="display: none;">
             <h1>Foglalkozások kezelése</h1>
+            <div class="form-inline mb-3">
+                <input type="text" class="form-control mr-2" id="newOccupationName" placeholder="Új foglalkozás neve">
+                <button id="addOccupationBtn" class="btn btn-primary">Foglalkozás hozzáadása</button>
+            </div>
 
             <table class="table table-striped table-bordered" id="occupationsTable">
                 <thead>
@@ -158,6 +162,7 @@
                         <th>Esemény neve</th>
                         <th>Foglalkozás neve</th>
                         <th>Szükséges mentorok</th>
+                        <th>Dolgozható órák</th>
                         <th>Műveletek</th>
                     </tr>
                 </thead>
@@ -178,7 +183,6 @@
                     <tr>
                         <th>Azonosító</th>
                         <th>Felhasználónév</th>
-                        <th>Jelszó</th>
                         <th>Név</th>
                         <th>Email</th>
                         <th>Osztályfőnök</th>
@@ -395,8 +399,8 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="js/script.js"></script>
     <script src="js/events.js"></script>
-    <script src="js/occupations.js"></script>
     <script src="js/students.js"></script>
+    <script src="js/occupations.js"></script>
     <script src="js/rankings.js"></script>
     <script src="js/headteachers.js"></script>
     <script src="js/invitations.js"></script>
