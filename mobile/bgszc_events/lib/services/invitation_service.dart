@@ -7,22 +7,21 @@ import 'package:bgszc_events/services/auth_service.dart';
 class InvitationService {
   final AuthService _authService = AuthService();
 
-  // API endpoint-ok (most már a helyes formátumban)
-  static const _getInvitationEndpoint = '/invitation'; // GET - Aktuális meghívó lekérése
-  static const _acceptInvitationEndpoint = '/invitation'; // POST - Elfogadás (része lesz az URL-nek)
-  static const _rejectInvitationEndpoint = '/invitation';  // POST - Elutasítás (része lesz az URL-nek)
-  static const _reAcceptInvitationEndpoint = '/invitation';
+  static const _getInvitationEndpoint =
+      '/backend/api/student_invitations/get_student_invitation_by_id.php'; // GET - Aktuális meghívó
+  static const _updateInvitationStatusEndpoint =
+      '/backend/api/student_invitations/update_invitation_status.php'; // POST - Státusz frissítése
 
   Future<Invitation?> getInvitation() async {
     final token = await _authService.getToken();
-    final user = await _authService.getUser(); //Kell a user ID
+    final user = await _authService.getUser();
     if (token == null || user == null) {
       throw Exception('Not logged in');
     }
 
     try {
       final response = await http.get(
-        Uri.parse('${ApiConstants.baseUrl}$_getInvitationEndpoint'),
+        Uri.parse('${ApiConstants.baseUrl}$_getInvitationEndpoint?userId=${user.userId}'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -30,15 +29,23 @@ class InvitationService {
       );
 
       if (response.statusCode == 200) {
-          final Map<String, dynamic> data = jsonDecode(response.body);
-          if(data.isNotEmpty){ //Csak akkor konvertáljuk, ha nem üres.
-            return Invitation.fromJson(data);
-          } else {
-            return null;
-          }
+        final dynamic responseData = jsonDecode(response.body);
 
+        if (responseData is List) {
+          for (var invitationData in responseData) {
+            final invitation = Invitation.fromJson(invitationData);
+            if (invitation.status == 'pending' ||
+                invitation.status == 'accepted' ||
+                invitation.status == 'reaccepted') {
+              return invitation;
+            }
+          }
+          return null;
+        } else {
+          throw Exception('Invalid response format from server.');
+        }
       } else if (response.statusCode == 404) {
-        return null; // Nincs meghívó
+        return null;
       } else {
         throw Exception('Failed to load invitation: ${response.statusCode}');
       }
@@ -47,62 +54,26 @@ class InvitationService {
     }
   }
 
-  Future<void> acceptInvitation(int invitationId) async {
+  Future<void> updateInvitationStatus(int invitationId, String status) async {
     final token = await _authService.getToken();
     if (token == null) {
       throw Exception('Not logged in');
     }
 
     final response = await http.post(
-      Uri.parse('${ApiConstants.baseUrl}$_acceptInvitationEndpoint/$invitationId/accept'), // HELYES URL
+      Uri.parse('${ApiConstants.baseUrl}$_updateInvitationStatusEndpoint'), 
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      // NEM kell body, mert az ID az URL-ben van
+      body: jsonEncode({
+        'invitationId': invitationId,
+        'status': status,
+      }),
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to accept invitation: ${response.statusCode}');
+      throw Exception('Failed to update invitation status: ${response.statusCode}, ${response.body}');
     }
   }
-
-  Future<void> rejectInvitation(int invitationId) async {
-    final token = await _authService.getToken();
-    if (token == null) {
-      throw Exception('Not logged in');
-    }
-
-    final response = await http.post(
-        Uri.parse('${ApiConstants.baseUrl}$_rejectInvitationEndpoint/$invitationId/reject'), // HELYES URL
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        // NEM kell body
-    );
-
-    if (response.statusCode != 200) {
-        throw Exception('Failed to reject invitation: ${response.statusCode}');
-    }
-  }
-    Future<void> reAcceptInvitation(int invitationId) async {
-      final token = await _authService.getToken();
-      if (token == null) {
-        throw Exception('Not logged in');
-      }
-
-      final response = await http.post(
-        Uri.parse('${ApiConstants.baseUrl}$_reAcceptInvitationEndpoint/$invitationId/accept'), // HELYES URL, újra accept
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        // NEM kell body
-      );
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to re-accept invitation: ${response.statusCode}');
-      }
-    }
 }

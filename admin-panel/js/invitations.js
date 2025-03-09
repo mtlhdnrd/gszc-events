@@ -91,6 +91,7 @@ $(document).ready(function() {
                             data: {
                                 event_workshop_id: ranking.event_workshop_id,
                                 user_id: student.id,
+                                ranking_number: ranking.ranking_number,
                                 status: "pending"
                             },
                             success: function(invitationResponse) {

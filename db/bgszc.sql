@@ -88,6 +88,7 @@ CREATE TABLE student_invitations (
     `invitation_id` INT PRIMARY KEY AUTO_INCREMENT,
     `event_workshop_id` INT NOT NULL,
     `user_id` INT NOT NULL,
+    `ranking_number` INT NOT NULL,
      -- pending/accepted/refused/re-accepted
     `status` VARCHAR(50) NOT NULL,
     FOREIGN KEY (`event_workshop_id`) REFERENCES event_workshop(`event_workshop_id`),
