@@ -5,10 +5,10 @@ require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/api_utils.php";
 
 if (validate_request("POST", array("username", "password", "name", "email", "teacher_id", "school_id"))) {
 
-    $username = $_POST["username"];
-    $password = $_POST["password"]; 
-    $name = $_POST["name"];
-    $email = $_POST["email"];
+    $username = htmlspecialchars($_POST["username"]);
+    $password = htmlspecialchars($_POST["password"]);
+    $name = htmlspecialchars($_POST["name"]);
+    $email = htmlspecialchars($_POST["email"]);
     $teacher_id = intval($_POST["teacher_id"]);  // Ensure integer
     $school_id = intval($_POST["school_id"]);    // Ensure integer
 

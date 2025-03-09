@@ -6,9 +6,9 @@ require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/api_utils.php";
 if (validate_request("POST", array("user_id", "username", "name", "email", "teacher_id"))) {
 
     $user_id = intval($_POST["user_id"]); // Ensure integer
-    $username = $_POST["username"];
-    $name = $_POST["name"];
-    $email = $_POST["email"];
+    $username = htmlspecialchars($_POST["username"]);
+    $name = htmlspecialchars($_POST["name"]);
+    $email = htmlspecialchars($_POST["email"]);
     $teacher_id = intval($_POST["teacher_id"]); // Ensure integer
 
     // --- Input Validation (Crucial!) ---
@@ -106,7 +106,7 @@ if (validate_request("POST", array("user_id", "username", "name", "email", "teac
 
         // Commit Transaction
         $conn->commit();
-        http_response_code(204); 
+        http_response_code(204);
 
     } catch (Exception $e) {
         $conn->rollback();
