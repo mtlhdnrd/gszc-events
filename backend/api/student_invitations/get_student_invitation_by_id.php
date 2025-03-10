@@ -6,7 +6,7 @@ require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/api_utils.php";
 
 $userId = $_GET['userId'] ?? null;
 
-if (validate_request("GET", []) && $userId !== null) { // Nem kell kötelező paraméter, csak a userId
+if (validate_request("GET", array("userId")) && $userId !== null) { // Nem kell kötelező paraméter, csak a userId
 
     if (!is_numeric($userId)) {
         http_response_code(400); // Bad Request

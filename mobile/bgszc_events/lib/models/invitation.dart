@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 class Invitation {
   final int invitationId, eventWorkshopId, studentId;
   final String eventName, workshopName, studentUsername, status;
@@ -7,14 +9,14 @@ class Invitation {
 
   factory Invitation.fromJson(Map<String, dynamic> json) {
     return Invitation(
-      invitationId: json['invitation_id'] as int,
-      eventWorkshopId: json['event_workshop_id'] as int,
-      studentId: json['student_id'] as int,
-      date: json['date'] as DateTime, //TODO: Nem biztos hogy jól parseol
-      studentUsername: json['student_username'] as String,
-      status: json['status'] as String,
-      eventName: json['event_name'] as String,
-      workshopName: json['workshop_name'] as String
+      invitationId: int.parse(json['invitation_id'].toString()),
+      eventWorkshopId: int.parse(json['event_workshop_id'].toString()),
+      studentId: int.parse(json['user_id'].toString()),
+      date: DateTime.parse(json['date']),
+      studentUsername: json['student_name'],
+      status: json['status'],
+      eventName: json['event_name'],
+      workshopName: json['workshop_name']
     );
   }
 

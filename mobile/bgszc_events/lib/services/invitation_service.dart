@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:bgszc_events/models/invitation.dart';
@@ -8,9 +9,9 @@ class InvitationService {
   final AuthService _authService = AuthService();
 
   static const _getInvitationEndpoint =
-      '/backend/api/student_invitations/get_student_invitation_by_id.php'; // GET - Aktuális meghívó
+      '/student_invitations/get_student_invitation_by_id.php'; // GET - Aktuális meghívó
   static const _updateInvitationStatusEndpoint =
-      '/backend/api/student_invitations/update_invitation_status.php'; // POST - Státusz frissítése
+      '/student_invitations/update_invitation_status.php'; // POST - Státusz frissítése
 
   Future<Invitation?> getInvitation() async {
     final token = await _authService.getToken();

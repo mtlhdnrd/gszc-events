@@ -4,12 +4,11 @@ require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/api_utils.php";
 require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/invitation_functions.php";
 
 if (validate_request("POST", array('invitationId', 'status'))) {
-
     $invitationId = $_POST['invitationId'];
     $status = $_POST['status'];
 
 
-    if (updateInvitationStatus((int)$invitationId, $status, $conn)) {
+    if (updateInvitationStatus((int) $invitationId, $status, $conn)) {
         http_response_code(200);
         echo json_encode(['message' => 'Invitation status updated.']);
     } else {
@@ -18,7 +17,7 @@ if (validate_request("POST", array('invitationId', 'status'))) {
     }
 
 } else {
-      http_response_code(400);
+    http_response_code(400);
     echo json_encode(["error" => "Invalid request method or missing parameters."]);
 }
 
