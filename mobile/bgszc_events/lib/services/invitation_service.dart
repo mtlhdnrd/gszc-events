@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:bgszc_events/models/invitation.dart';

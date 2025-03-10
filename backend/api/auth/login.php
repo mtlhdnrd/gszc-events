@@ -7,7 +7,7 @@ require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/src/JWT.php";
 require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/src/Key.php";
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
-
+header('Content-Type: application/json');
 // Ellenőrizzük, hogy POST kérés érkezett-e
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // JSON adatok fogadása (a $_POST helyett, mert Content-Type: application/json)
