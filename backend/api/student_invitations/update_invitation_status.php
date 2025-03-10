@@ -3,9 +3,10 @@ require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/config.php";
 require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/api_utils.php";
 require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/invitation_functions.php";
 
-if (validate_request("POST", array('invitationId', 'status'))) {
-    $invitationId = $_POST['invitationId'];
-    $status = $_POST['status'];
+if ($_SERVER['REQUEST_METHOD'] == "POST") {
+    $input = json_decode(file_get_contents('php://input'), true);
+    $invitationId = $input['invitationId'];
+    $status = $input['status'];
 
 
     if (updateInvitationStatus((int) $invitationId, $status, $conn)) {

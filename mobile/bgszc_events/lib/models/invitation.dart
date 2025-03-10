@@ -1,4 +1,3 @@
-import 'dart:developer';
 
 class Invitation {
   final int invitationId, eventWorkshopId, studentId;
