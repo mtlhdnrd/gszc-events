@@ -53,7 +53,7 @@ class OccupationContainer {
 
 // --- EventOccupation Class and Container ---
 class EventOccupation {
-    constructor(eventOccupationId, eventId, eventName, occupationId, occupationName, mentorCount, hoursCount) {
+    constructor(eventOccupationId, eventId, eventName, occupationId, occupationName, mentorCount, hoursCount, busyness) {
         this.eventOccupationId = eventOccupationId; // Added eventOccupationId
         this.eventId = eventId;
         this.eventName = eventName;
@@ -61,6 +61,7 @@ class EventOccupation {
         this.occupationName = occupationName;
         this.mentorCount = mentorCount;
         this.hoursCount = hoursCount;
+        this.busyness = busyness;
     }
     toJson() {
         return {
@@ -68,7 +69,9 @@ class EventOccupation {
             evenet_id: this.eventId,
             workshop_id: this.occupationId,
             hours_count: this.hoursCount,
-            mentor_count: this.mentorCount
+            mentor_count: this.mentorCount,
+            busyness: this.busyness == "magas" ? "high" : "low"
+
         };
     }
 }
@@ -445,6 +448,7 @@ $(document).ready(function () {
         let occupationId = $('#occupationSelectEvent').val();
         let mentorCount = $('#mentorCount').val();
         let hoursCount = $('#hoursCount').val();
+        let busyness = $('#busyness').val();
     
         if (!eventId || !occupationId || !mentorCount || !hoursCount) {
             alert('Kérlek válassz eseményt, foglalkozást, és add meg a szükséges mentorok számát és óraszámot!');

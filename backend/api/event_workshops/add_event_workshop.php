@@ -2,12 +2,13 @@
 require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/config.php";
 require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/api_utils.php";
 
-if (validate_request("POST", array("event_id", "workshop_id", "max_workable_hours","number_of_mentors_required"))) {
+if (validate_request("POST", array("event_id", "workshop_id", "max_workable_hours","number_of_mentors_required", "busyness"))) {
 
     $event_id = intval($_POST["event_id"]);          
     $workshop_id = intval($_POST["workshop_id"]);      
     $max_workable_hours = intval($_POST["max_workable_hours"]);
-    $number_of_mentors_required = intval($_POST["number_of_mentors_required"]); 
+    $number_of_mentors_required = intval($_POST["number_of_mentors_required"]);
+    $busyness = htmlspecialchars($_POST["busyness"]);
 
     
     $check_event_query = "SELECT 1 FROM events WHERE event_id = ?";
@@ -37,9 +38,9 @@ if (validate_request("POST", array("event_id", "workshop_id", "max_workable_hour
         exit; 
     }
 
-    $query = "INSERT INTO `event_workshop` (`event_id`, `workshop_id`, `max_workable_hours`, `number_of_mentors_required`) VALUES (?, ?, ?, ?);";
+    $query = "INSERT INTO `event_workshop` (`event_id`, `workshop_id`, `max_workable_hours`, `number_of_mentors_required`, `busyness`) VALUES (?, ?, ?, ?, ?);";
     $stmt = $conn->prepare($query);
-    $stmt->bind_param("iiii", $event_id, $workshop_id, $max_workable_hours, $number_of_mentors_required);
+    $stmt->bind_param("iiii", $event_id, $workshop_id, $max_workable_hours, $number_of_mentors_required, $busyness);
 
     if ($stmt->execute()) {
         echo $stmt->insert_id;  

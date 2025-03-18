@@ -1,16 +1,15 @@
 <?php
     require_once $_SERVER["DOCUMENT_ROOT"]."/bgszc-events/backend/config.php";
     require_once $_SERVER["DOCUMENT_ROOT"]."/bgszc-events/backend/api_utils.php";
-    if(validate_request("POST", array("event_id", "name", "date", "location", "status", "busyness"))) {
+    if(validate_request("POST", array("event_id", "name", "date", "location", "status"))) {
         $event_id = htmlspecialchars($_POST["event_id"]);
         $name = htmlspecialchars($_POST["name"]);
         $date = htmlspecialchars($_POST["date"]);
         $location = htmlspecialchars($_POST["location"]);
         $status = htmlspecialchars($_POST["status"]);
-        $busyness = htmlspecialchars($_POST["busyness"]);
-        $query = "UPDATE `events` SET `name` = ?, `date` = ?, `location` = ?, `status` = ?, `busyness` = ? WHERE `event_id` = ?;";
+        $query = "UPDATE `events` SET `name` = ?, `date` = ?, `location` = ?, `status` = ? WHERE `event_id` = ?;";
         $stmt = $conn->prepare($query);
-        $stmt->bind_param("sssssi", $name, $date, $location, $status, $busyness, $event_id);
+        $stmt->bind_param("sssssi", $name, $date, $location, $status, $event_id);
         if($stmt->execute()) {
             http_response_code(200);
         } else {

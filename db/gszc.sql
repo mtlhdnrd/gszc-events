@@ -47,8 +47,7 @@ CREATE TABLE events (
     `date` DATE NOT NULL,
     `location` VARCHAR(255) NOT NULL,
      -- pending/ready/failed (based on if enough people accepted it or not)
-    `status` VARCHAR(255) NOT NULL,
-    `busyness` ENUM('low', 'high') NOT NULL
+    `status` VARCHAR(255) NOT NULL
 );
 
 -- the name workshop doesn't ring quite right, but I can't think of a better one
@@ -71,12 +70,13 @@ CREATE TABLE event_workshop (
     `event_workshop_id` INT PRIMARY KEY AUTO_INCREMENT,
     `event_id` INT NOT NULL,
     `workshop_id` INT NOT NULL,
-    `max_workable_hours` INT NOT NULL,
-    `number_of_mentors_required` INT NOT NULL,
+    `max_workable_hours` INT NOT NULL DEFAULT 0,
+    `number_of_mentors_required` INT NOT NULL DEFAULT 0,
+    `number_of_teachers_required` INT NOT NULL DEFAULT 0,
+    `busyness` ENUM('low', 'high') NOT NULL DEFAULT 'high',
     FOREIGN KEY (`event_id`) REFERENCES events(`event_id`),
     FOREIGN KEY (`workshop_id`) REFERENCES workshops(`workshop_id`)
 );
-
 -- Diak foglalkozas
 CREATE TABLE mentor_workshop (
     `mentor_workshop_id` INT PRIMARY KEY AUTO_INCREMENT,

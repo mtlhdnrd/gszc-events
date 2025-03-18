@@ -51,7 +51,6 @@
                         <th>Név</th>
                         <th>Dátum</th>
                         <th>Helyszín</th>
-                        <th>Terheltség</th>
                         <th>Státusz</th>
                         <th>Műveletek</th>
                     </tr>
@@ -83,13 +82,6 @@
                                 <div class="form-group">
                                     <label for="eventLocation">Helyszín:</label>
                                     <input type="text" class="form-control" id="eventLocation" name="eventLocation">
-                                </div>
-                                <div class="form-group">
-                                    <label for="eventLoadLevel">Terheltség:</label>
-                                    <select class="form-control" id="eventLoadLevel" name="eventLoadLevel">
-                                        <option value="magas">Magas</option>
-                                        <option value="alacsony">Alacsony</option>
-                                    </select>
                                 </div>
                                 <div class="form-group">
                                     <label for="eventStatus">Státusz:</label>
@@ -132,29 +124,31 @@
 
             <div id="addOccupationEventForm">
                 <h2 class="mt-4">Foglalkozás hozzárendelése eseményhez</h2>
+
                 <div class="form-group">
                     <label for="eventSelect">Esemény:</label>
                     <select class="form-control" id="eventSelect">
                         <option value="">Válassz eseményt</option>
-                        <!-- Events will be loaded here -->
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="occupationSelect">Foglalkozás:</label>
-                    <select class="form-control" id="occupationSelectEvent">
-                        <option value="">Válassz foglalkozást</option>
-                        <!-- Occupations will be loaded here -->
-                    </select>
+
+                <div id="occupationsTableContainer" style="display: none;">
+                    <table class="table mt-3" id="occupationsTable">
+                        <thead>
+                            <tr>
+                                <th>Név</th>
+                                <th>Van e az eseményen</th>
+                                <th>Kellő mentordiák szám</th>
+                                <th>Kellő mentor tanár szám</th>
+                                <th>Leterheltség</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Table rows will be added here dynamically -->
+                        </tbody>
+                    </table>
+                    <button id="saveOccupationsBtn" class="btn btn-primary">Mentés</button>
                 </div>
-                <div class="form-group">
-                    <label for="mentorCount">Szükséges mentorok száma:</label>
-                    <input type="number" class="form-control" id="mentorCount" min="1" value="1">
-                </div>
-                <div class="form-group">
-                    <label for="hoursCount">Ledolgozható órák száma:</label>
-                    <input type="number" class="form-control" id="hoursCount" min="1" value="1">
-                </div>
-                <button id="addOccupationToEventBtn" class="btn btn-primary">Hozzárendelés</button>
             </div>
             <table class="table table-striped table-bordered" id="eventOccupationsTable">
                 <thead>

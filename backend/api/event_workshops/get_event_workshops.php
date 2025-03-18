@@ -12,7 +12,8 @@ if (validate_request("GET", array())) {
                 e.event_id AS event_id,
                 w.workshop_id AS workshop_id,
                 ew.number_of_mentors_required,
-                ew.max_workable_hours
+                ew.max_workable_hours,
+                ew.busyness
               FROM event_workshop ew
               INNER JOIN events e ON ew.event_id = e.event_id
               INNER JOIN workshops w ON ew.workshop_id = w.workshop_id;";
