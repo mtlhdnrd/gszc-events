@@ -1,6 +1,6 @@
-CREATE DATABASE IF NOT EXISTS bgszc_events;
+CREATE DATABASE IF NOT EXISTS gszc_events;
 
-USE bgszc_events;
+USE gszc_events;
 
 CREATE TABLE schools (
     `school_id` INT PRIMARY KEY AUTO_INCREMENT,
@@ -21,13 +21,16 @@ CREATE TABLE users (
     `password` VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE students (
+CREATE TABLE participants (
     `user_id` INT PRIMARY KEY NOT NULL,
     `name` VARCHAR(255) NOT NULL,
     `email` VARCHAR(255) UNIQUE NOT NULL,
-    `teacher_id` INT NOT NULL,
+    `type` ENUM('student', 'teacher') NOT NULL,
+    `teacher_id` INT DEFAULT NULL,
     `school_id` INT NOT NULL,
     `total_hours_worked` INT DEFAULT 0,
+    -- The number of events that the participant missed 
+    `events_elapsed` INT DEFAULT 0,
     FOREIGN KEY (`teacher_id`) REFERENCES teachers(`teacher_id`),
     FOREIGN KEY (`school_id`) REFERENCES schools(`school_id`),
     FOREIGN KEY (`user_id`) REFERENCES users(`user_id`)
@@ -55,6 +58,15 @@ CREATE TABLE workshops (
     `description` VARCHAR(255)
 );
 
+CREATE TABLE workshop_ranking(
+    `workshop_ranking_id` INT PRIMARY KEY AUTO_INCREMENT,
+    `workshop_id` INT NOT NULL,
+    `user_id` INT NOT NULL,
+    `ranking_number` INT NOT NULL,
+    FOREIGN KEY (`workshop_id`) REFERENCES workshops(`workshop_id`),
+    FOREIGN KEY (`user_id`) REFERENCES users(`user_id`)
+);
+
 CREATE TABLE event_workshop (
     `event_workshop_id` INT PRIMARY KEY AUTO_INCREMENT,
     `event_id` INT NOT NULL,
@@ -70,7 +82,8 @@ CREATE TABLE mentor_workshop (
     `mentor_workshop_id` INT PRIMARY KEY AUTO_INCREMENT,
     `user_id` INT NOT NULL,
     `workshop_id` INT NOT NULL,
-    FOREIGN KEY (`user_id`) REFERENCES students(`user_id`),
+    `ranking_number` INT NOT NULL,
+    FOREIGN KEY (`user_id`) REFERENCES participants(`user_id`),
     FOREIGN KEY (`workshop_id`) REFERENCES workshops(`workshop_id`)
 );
 
@@ -80,11 +93,11 @@ CREATE TABLE rankings (
     `user_id` INT NOT NULL,
     `ranking_number` INT NOT NULL,
     FOREIGN KEY (`event_workshop_id`) REFERENCES event_workshop(`event_workshop_id`),
-    FOREIGN KEY (`user_id`) REFERENCES students(`user_id`)
+    FOREIGN KEY (`user_id`) REFERENCES participants(`user_id`)
 );
 
 -- Diak meghivo -> egy darab meghívó a diák részére
-CREATE TABLE student_invitations (
+CREATE TABLE participant_invitations (
     `invitation_id` INT PRIMARY KEY AUTO_INCREMENT,
     `event_workshop_id` INT NOT NULL,
     `user_id` INT NOT NULL,
@@ -92,7 +105,7 @@ CREATE TABLE student_invitations (
      -- pending/accepted/refused/re-accepted
     `status` VARCHAR(50) NOT NULL,
     FOREIGN KEY (`event_workshop_id`) REFERENCES event_workshop(`event_workshop_id`),
-    FOREIGN KEY (`user_id`) REFERENCES students(`user_id`)
+    FOREIGN KEY (`user_id`) REFERENCES participants(`user_id`)
 );
 
 CREATE TABLE attendance_sheets (
@@ -100,6 +113,6 @@ CREATE TABLE attendance_sheets (
     `user_id` INT NOT NULL,
     `event_workshop_id` INT NOT NULL,
     `note` TEXT NOT NULL,
-    FOREIGN KEY (`user_id`) REFERENCES students(`user_id`),
+    FOREIGN KEY (`user_id`) REFERENCES participants(`user_id`),
     FOREIGN KEY (`event_workshop_id`) REFERENCES event_workshop(`event_workshop_id`)
 );

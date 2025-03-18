@@ -164,6 +164,7 @@ $(document).ready(function () {
 
     $(document).on('headTeacherAdded', loadHeadTeachers);
     $(document).on('headTeacherAdded', loadStudents);
+    $(document).on('studentUpdated', loadStudentsIntoSelect);
     $(document).on('studentAdded', loadStudents);
     $(document).on('workshopAdded', loadOccupationsIntoSelect);
 
@@ -232,6 +233,7 @@ $(document).ready(function () {
                             }
                         });
                         student.headTeacherName = teacherName;
+                        $(document).trigger('studentUpdated', studentContainer);
                      }
     
     
