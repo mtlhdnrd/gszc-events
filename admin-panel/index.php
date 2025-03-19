@@ -129,6 +129,7 @@
                     <label for="eventSelect">Esemény:</label>
                     <select class="form-control" id="eventSelect">
                         <option value="">Válassz eseményt</option>
+                        <!-- Events will be loaded dynamically -->
                     </select>
                 </div>
 
@@ -140,6 +141,7 @@
                                 <th>Van e az eseményen</th>
                                 <th>Kellő mentordiák szám</th>
                                 <th>Kellő mentor tanár szám</th>
+                                <th>Ledolgozható órák</th>
                                 <th>Leterheltség</th>
                             </tr>
                         </thead>

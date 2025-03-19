@@ -1,7 +1,6 @@
 <?php
-// get_event_workshops.php
-require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/config.php";
-require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/api_utils.php";
+    require_once "../../config.php";
+    require_once "../../api_utils.php";
 
 if (validate_request("GET", array())) {
 
