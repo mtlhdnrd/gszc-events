@@ -393,11 +393,11 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="js/script.js"></script>
     <script src="js/events.js"></script>
-    <script src="js/students.js"></script>
+    <!--script src="js/students.js"></script>
     <script src="js/occupations.js"></script>
     <script src="js/rankings.js"></script>
     <script src="js/headteachers.js"></script>
-    <script src="js/invitations.js"></script>
+    <script src="js/invitations.js"></script-->
 </body>
 
 </html>

@@ -23,9 +23,7 @@ class Event {
             date: this.date,
             location: this.location,
             status: this.status,
-            //TODO: remove this
-            busyness: this.loadLevel == "magas" ? "high" : "low"
-        };
+    };
     }
 }
 class EventContainer {
@@ -99,30 +97,24 @@ $(document).ready(function () {
         });
     }
     function finishEditing(row) {
+        let eventId = parseInt(row.find('.event-id').text(), 10);
         // Get the updated data from the input fields
         let updatedData = {
-            event_id:  parseInt(row.find('.event-id').text(), 10),
+            event_id: eventId,
             name: row.find('input[data-field="name"]').val(),
             date: row.find('input[data-field="date"]').val(),
             location: row.find('input[data-field="location"]').val(),
-            status: row.find('select[data-field="status"]').val(),
-            busyness: row.find('input[data-field="loadLevel"]').val()
+            status: row.find('select[data-field="status"]').val()
         };
-
-        // Get the event ID from the hidden span
-        let eventId = parseInt(row.find('.event-id').text(), 10);
 
         // Update the event in the container
         if (eventContainer.updateEvent(eventId, updatedData)) {
-            console.log("Event updated in container.  Ready to save to server:", eventId, updatedData);
+            console.log("Event updated in container.  Ready to save to server:", updatedData);
             $.ajax({
                 type: "POST",
                 url: "../backend/api/events/update_event.php",
                 dataType: 'json',
-                data: {
-                    event_id: eventId, 
-                    ...updatedData
-                },
+                data: updatedData,
                 success: function(data) {
                     console.log("Event updated on server:", data);
                     alert("Esemény sikeresen frissítve!");
@@ -169,7 +161,7 @@ $(document).ready(function () {
         if (confirm('Biztosan törölni szeretnéd?')) {
             $.ajax({
                 type: "DELETE",
-                url: `http://localhost/bgszc-events/backend/api/events/delete_event.php?event_id=${id}`,//FIXME: localhost address?
+                url: `../backend/api/events/delete_event.php?event_id=${id}`,
                 success: function(data){
                     row.remove();
                 },
@@ -191,11 +183,10 @@ $(document).ready(function () {
             name: $('#eventName').val(),
             date: $('#eventDate').val(),
             location: $('#eventLocation').val(),
-            loadLevel: $('#eventLoadLevel').val(),
             status: $('#eventStatus').val()
         };
         // Input validation
-        if (!eventData.name || !eventData.date || !eventData.location || !eventData.loadLevel) {
+        if (!eventData.name || !eventData.date || !eventData.location) {
             alert('Kérlek tölts ki minden mezőt!');
             return;
         }
@@ -216,7 +207,6 @@ $(document).ready(function () {
             dataType: 'json',
             success: function (data) {
                 eventContainer.events = [];
-
                 data.forEach(function (eventData) {
                     const event = new Event(
                         eventData.event_id,
