@@ -1,6 +1,6 @@
 <?php
-    require_once $_SERVER["DOCUMENT_ROOT"]."/bgszc-events/backend/config.php";
-    require_once $_SERVER["DOCUMENT_ROOT"]."/bgszc-events/backend/api_utils.php";
+        require_once "../../config.php";
+        require_once "../../api_utils.php";
     if(validate_request("POST", array("name", "description"))) {
         $name = htmlspecialchars($_POST["name"]);
         $description = htmlspecialchars($_POST["description"]);

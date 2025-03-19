@@ -149,7 +149,7 @@ $(document).ready(function () {
         let newId = maxId + 1;
 
         const newOccupation = new Occupation(newId, occupationName);
-
+        console.log(newOccupation.toJson());
         $('#newOccupationName').val('');
         $.ajax({
             type: "POST",
@@ -317,7 +317,6 @@ $(document).ready(function () {
         $.ajax({
             url: '../backend/api/workshops/get_workshops.php',
             type: 'GET',
-            dataType: 'json',
             success: function (data) {
                 $('#occupationsTable tbody').empty();
                 occupationContainer.occupations = [];
