@@ -118,6 +118,7 @@ $(document).ready(function() {
     // --- Event Handlers (using event delegation) ---
     $('#eventSelect').on('change', handleEventSelectionChange);
     $('#saveOccupationsBtn').on('click', saveOccupations);
+    $(document).on('eventAdded', loadEventsIntoSelect);
 
       $('#occupationsTable tbody').on('click', '.edit-button', handleEditOccupationClick);
     $('#occupationsTable tbody').on('click', '.cancel-button', handleCancelOccupationClick);
@@ -127,25 +128,15 @@ $(document).ready(function() {
 
     function handleEventSelectionChange() {
         const selectedEventId = parseInt($(this).val(), 10);
-
+        $('#eventOccupationsTable tbody').empty();
         if (selectedEventId) {
-            // 1. Filter EventOccupations by eventId
             const filteredEventOccupations = eventOccupationContainer.getEventOccupationsByEventId(selectedEventId);
 
-            // 2. Clear existing table rows
-            $('#occupationsTable tbody').empty();
-
-            // 3. Generate table rows for filtered occupations
             $.each(filteredEventOccupations, function(index, eventOccupation) {
                 addOccupationRow(eventOccupation);
             });
 
-            // 4. Show the table
             $('#occupationsTableContainer').show();
-        } else {
-            // Hide the table if no event is selected
-            $('#occupationsTableContainer').hide();
-            $('#occupationsTable tbody').empty();
         }
     }
      function loadEventsIntoSelect() {
@@ -187,7 +178,6 @@ $(document).ready(function() {
             type: "GET",
             dataType: "json",
             success: function (data) {
-                //$('#eventOccupationsTable tbody').empty(); No need for this table
                 eventOccupationContainer.eventOccupations = [];
 
                 data.forEach(function (eventWorkshop) {
@@ -217,7 +207,7 @@ $(document).ready(function() {
             url: '../backend/api/workshops/get_workshops.php',
             type: 'GET',
             success: function (data) {
-                 $('#occupationsTable tbody').empty(); //Clear the other occupationsTable
+                 $('#eventOccupationsTable tbody').empty(); //Clear the other occupationsTable
                 occupationContainer.occupations = []; // Clear local occupations
                 data.forEach(function (occupationData) {
                     const occupation = new Occupation(occupationData.workshop_id, occupationData.name, occupationData.description);
@@ -232,7 +222,7 @@ $(document).ready(function() {
         });
     }
 
-    function addOccupationRowToMainTable(occupation) { //New function for main table
+    function addOccupationRowToMainTable(occupation) {
         let row = $('<tr>');
         row.append('<td hidden><span class="occupation-id">' + occupation.id + '</span></td>');
         row.append($('<td>').text(occupation.id)); // Display ID
@@ -287,16 +277,16 @@ $(document).ready(function() {
 
         // Iterate over each occupation row.  Use the .each() method with a standard function
         $('.occupation-row').each(function() {
-            const row = $(this); // $(this) refers to the current row in the loop
+            const row = $(this);
             const eventOccupationId = parseInt(row.data('event-occupation-id'), 10);
             const isChecked = row.find('.occupation-checkbox').prop('checked');
             const mentorDiakCount = parseInt(row.find('.mentor-diak-count').val(), 10);
             const mentorTanarCount = parseInt(row.find('.mentor-tanar-count').val(), 10);
             const workload = row.find('.workload-select').val();
-            // Find the EventOccupation by ID
+            const hours_count = parseInt(row.find('.hours-count').val(), 10);
             const eventOccupation = eventOccupationContainer.getEventOccupationById(eventOccupationId);
 
-            if(eventOccupation) { // Check if exist
+            if(eventOccupation && isChecked) { //if it exists and is checked, add
                 occupationsData.push({
                         event_workshop_id: eventOccupation.eventOccupationId,  // Use eventOccupationId
                         event_id: eventOccupation.eventId, // Include eventId
@@ -304,10 +294,8 @@ $(document).ready(function() {
                         number_of_mentors_required: mentorDiakCount,
                         number_of_teachers_required: mentorTanarCount,
                         busyness: workload,
-                        max_workable_hours: 0
+                        max_workable_hours: hours_count
                 });
-            } else {
-                console.error("Could not find event occupation with ID:", eventOccupationId)
             }
         });
 
@@ -323,8 +311,7 @@ $(document).ready(function() {
                 console.log('Save successful:', response);
                 alert('Sikeres mentés!');
                 loadEventOccupations();  // Reload after saving
-                $('#occupationsTableContainer').hide(); //Hide table
-                $('#occupationsTable tbody').empty();  // Clear rows.
+                $('#eventOccupationsTable tbody').empty();  // Clear rows.
             },
             error: function(xhr, status, error) {
                 console.error('Save failed:', error, xhr.responseText);

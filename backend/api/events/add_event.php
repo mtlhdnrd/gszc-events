@@ -39,7 +39,7 @@ if (validate_request("POST", array("name", "date", "location", "status"))) {
         $workshop_stmt->close();
 
         // 3. Insert event_workshop entries for each workshop
-        $insert_query = "INSERT INTO `event_workshop` (`event_id`, `workshop_id`) VALUES (?, ?);"; // Using default values.
+        $insert_query = "INSERT INTO `event_workshop` (`event_id`, `workshop_id`, `max_workable_hours`, `number_of_mentors_required`, `number_of_teachers_required`) VALUES (?, ?, 5, 3, 1);"; // Using default values.
         $insert_stmt = $conn->prepare($insert_query);
 
         foreach ($workshop_ids as $workshop_id) {

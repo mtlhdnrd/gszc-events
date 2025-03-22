@@ -134,7 +134,7 @@
                 </div>
 
                 <div id="occupationsTableContainer" style="display: none;">
-                    <table class="table mt-3" id="occupationsTable">
+                    <table class="table mt-3" id="eventOccupationsTable">
                         <thead>
                             <tr>
                                 <th>Név</th>
@@ -152,22 +152,6 @@
                     <button id="saveOccupationsBtn" class="btn btn-primary">Mentés</button>
                 </div>
             </div>
-            <table class="table table-striped table-bordered" id="eventOccupationsTable">
-                <thead>
-                    <tr>
-                        <th>Esemény neve</th>
-                        <th>Foglalkozás neve</th>
-                        <th>Szükséges mentorok</th>
-                        <th>Dolgozható órák</th>
-                        <th>Műveletek</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Event-Occupation assignments will be loaded here -->
-                </tbody>
-            </table>
-
-
         </div>
 
         <div id="students" class="content-section" style="display: none;">
