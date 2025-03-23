@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 22, 2025 at 04:58 PM
+-- Generation Time: Mar 23, 2025 at 03:05 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -65,7 +65,7 @@ CREATE TABLE `events` (
 --
 
 INSERT INTO `events` (`event_id`, `name`, `date`, `location`, `status`) VALUES
-(6, 'Hygger', '2025-03-27', 'home', 'failed');
+(7, 'Erdély visszafoglalása', '2025-03-24', 'Erdély', 'ready');
 
 -- --------------------------------------------------------
 
@@ -82,13 +82,6 @@ CREATE TABLE `event_workshop` (
   `number_of_teachers_required` int(11) NOT NULL DEFAULT 0,
   `busyness` enum('low','high') NOT NULL DEFAULT 'high'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `event_workshop`
---
-
-INSERT INTO `event_workshop` (`event_workshop_id`, `event_id`, `workshop_id`, `max_workable_hours`, `number_of_mentors_required`, `number_of_teachers_required`, `busyness`) VALUES
-(9, 6, 3, 5, 3, 3, 'low');
 
 -- --------------------------------------------------------
 
@@ -168,6 +161,7 @@ CREATE TABLE `schools` (
 CREATE TABLE `teachers` (
   `teacher_id` int(11) NOT NULL,
   `name` varchar(255) NOT NULL,
+  `school_id` int(11) NOT NULL,
   `email` varchar(130) NOT NULL,
   `phone` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -201,9 +195,8 @@ CREATE TABLE `workshops` (
 --
 
 INSERT INTO `workshops` (`workshop_id`, `name`, `description`) VALUES
-(3, 'Gizmo simogatás', 'Iskolai foglalkozás'),
-(4, 'Kyra simogatás', 'Iskolai foglalkozás'),
-(5, 'Chug simogatás', 'Iskolai foglalkozás');
+(10, 'Visszafoglalás békével', 'Iskolai foglalkozás'),
+(11, 'Diplomáciai úton', 'Iskolai foglalkozás');
 
 -- --------------------------------------------------------
 
@@ -293,7 +286,8 @@ ALTER TABLE `schools`
 -- Indexes for table `teachers`
 --
 ALTER TABLE `teachers`
-  ADD PRIMARY KEY (`teacher_id`);
+  ADD PRIMARY KEY (`teacher_id`),
+  ADD KEY `school_id` (`school_id`);
 
 --
 -- Indexes for table `users`
@@ -330,13 +324,13 @@ ALTER TABLE `attendance_sheets`
 -- AUTO_INCREMENT for table `events`
 --
 ALTER TABLE `events`
-  MODIFY `event_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `event_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `event_workshop`
 --
 ALTER TABLE `event_workshop`
-  MODIFY `event_workshop_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `event_workshop_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `mentor_workshop`
@@ -378,7 +372,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `workshops`
 --
 ALTER TABLE `workshops`
-  MODIFY `workshop_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `workshop_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `workshop_ranking`
@@ -439,6 +433,12 @@ ALTER TABLE `participant_invitations`
 ALTER TABLE `rankings`
   ADD CONSTRAINT `rankings_ibfk_1` FOREIGN KEY (`event_workshop_id`) REFERENCES `event_workshop` (`event_workshop_id`),
   ADD CONSTRAINT `rankings_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `participants` (`user_id`);
+
+--
+-- Constraints for table `teachers`
+--
+ALTER TABLE `teachers`
+  ADD CONSTRAINT `teachers_ibfk_1` FOREIGN KEY (`school_id`) REFERENCES `schools` (`school_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `workshop_ranking`
