@@ -11,6 +11,7 @@ if (validate_request("GET", array())) {
                 e.event_id AS event_id,
                 w.workshop_id AS workshop_id,
                 ew.number_of_mentors_required,
+                ew.number_of_teachers_required,
                 ew.max_workable_hours,
                 ew.busyness
               FROM event_workshop ew

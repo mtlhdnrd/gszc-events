@@ -53,13 +53,14 @@ class OccupationContainer {
 
 // --- EventOccupation Class and Container ---
 class EventOccupation {
-    constructor(eventOccupationId, eventId, eventName, occupationId, occupationName, mentorCount, hoursCount, busyness) {
-        this.eventOccupationId = eventOccupationId; // Added eventOccupationId
+    constructor(eventOccupationId, eventId, eventName, occupationId, occupationName, mentorCount, teacherCount, hoursCount, busyness) {
+        this.eventOccupationId = eventOccupationId;
         this.eventId = eventId;
         this.eventName = eventName;
         this.occupationId = occupationId;
         this.occupationName = occupationName;
         this.mentorCount = mentorCount;
+        this.teacherCount = teacherCount;
         this.hoursCount = hoursCount;
         this.busyness = busyness;
     }
@@ -70,6 +71,7 @@ class EventOccupation {
             workshop_id: this.occupationId,
             hours_count: this.hoursCount,
             mentor_count: this.mentorCount,
+            teacher_count: this.teacherCount,
             busyness: this.busyness == "magas" ? "high" : "low"
 
         };
@@ -94,11 +96,11 @@ class EventOccupationContainer {
     getEventOccupationsByEventId(eventId) {
         return this.eventOccupations.filter(eo => eo.eventId === eventId);
     }
-    getEventOccupationById(eventOccupationId) { // Added get by ID
+    getEventOccupationById(eventOccupationId) {
         return this.eventOccupations.find(eo => eo.eventOccupationId === eventOccupationId);
     }
 
-    removeEventOccupationById(eventOccupationId) { // Changed to remove by ID
+    removeEventOccupationById(eventOccupationId) {
         const initialLength = this.eventOccupations.length;
         this.eventOccupations = this.eventOccupations.filter(eo => eo.eventOccupationId !== eventOccupationId);
         return this.eventOccupations.length < initialLength;
@@ -130,13 +132,23 @@ $(document).ready(function() {
         const selectedEventId = parseInt($(this).val(), 10);
         $('#eventOccupationsTable tbody').empty();
         if (selectedEventId) {
-            const filteredEventOccupations = eventOccupationContainer.getEventOccupationsByEventId(selectedEventId);
-
-            $.each(filteredEventOccupations, function(index, eventOccupation) {
-                addOccupationRow(eventOccupation);
+            const allOccupations = occupationContainer.getAllOccupations();
+            const eventOccupations = eventOccupationContainer.getEventOccupationsByEventId(selectedEventId);
+            const associatedOccupationIds = {};
+            eventOccupations.forEach(eo => {
+                associatedOccupationIds[eo.occupationId] = eo;
             });
-
-            $('#occupationsTableContainer').show();
+            allOccupations.forEach(occupation => {
+                const associatedEO = associatedOccupationIds[occupation.id];
+                const isChecked = !!associatedEO;
+                const mentorCount = associatedEO ? associatedEO.mentorCount : 3; 
+                const teacherCount = associatedEO ? associatedEO.teacherCount : 1;
+                const hoursCount = associatedEO ? associatedEO.hoursCount : 3;
+                const busyness = associatedEO ? associatedEO.busyness : 'high';
+                const eventOccupationId = associatedEO? associatedEO.eventOccupationId : -1;
+                addEventOccupationRow(occupation, true, mentorCount, teacherCount, hoursCount, busyness, eventOccupationId);
+            });
+            $('#eventOccupationsTableContainer').show();
         }
     }
      function loadEventsIntoSelect() {
@@ -188,10 +200,10 @@ $(document).ready(function() {
                         eventWorkshop.workshop_id,
                         eventWorkshop.workshop_name,
                         eventWorkshop.number_of_mentors_required,
-                        eventWorkshop.number_of_teachers_required, // Get data from API
+                        eventWorkshop.number_of_teachers_required, 
+                        eventWorkshop.max_workable_hours,
                         eventWorkshop.busyness
                     );
-
                     eventOccupationContainer.addEventOccupation(eo);
                 });
             },
@@ -207,12 +219,12 @@ $(document).ready(function() {
             url: '../backend/api/workshops/get_workshops.php',
             type: 'GET',
             success: function (data) {
-                 $('#eventOccupationsTable tbody').empty(); //Clear the other occupationsTable
-                occupationContainer.occupations = []; // Clear local occupations
+                 $('#occupationsTable tbody').empty(); //Clear the other occupationsTable
+                occupationContainer.occupations = []; 
                 data.forEach(function (occupationData) {
                     const occupation = new Occupation(occupationData.workshop_id, occupationData.name, occupationData.description);
                     occupationContainer.addOccupation(occupation); //Repopulate it with the current data.
-                    addOccupationRowToMainTable(occupation);
+                    addOccupationRow(occupation);
                 });
             },
             error: function (xhr, status, error) {
@@ -222,7 +234,7 @@ $(document).ready(function() {
         });
     }
 
-    function addOccupationRowToMainTable(occupation) {
+    function addOccupationRow(occupation) {
         let row = $('<tr>');
         row.append('<td hidden><span class="occupation-id">' + occupation.id + '</span></td>');
         row.append($('<td>').text(occupation.id)); // Display ID
@@ -236,38 +248,30 @@ $(document).ready(function() {
         row.append(actionsCell);
         $('#occupationsTable tbody:first').append(row); // Append to the first tbody
     }
-    function addOccupationRow(eventOccupation) {
-        // Get the full occupation object for the name
-        const occupation = occupationContainer.getOccupationById(eventOccupation.occupationId);
-
-        if (!occupation) {
-            console.error("Occupation not found for ID:", eventOccupation.occupationId);
-            return; // Exit if occupation not found
-        }
-    
+    function addEventOccupationRow(occupation, isChecked, mentorCount, teacherCount, hoursCount, busyness, eventOccupationId) {
         const row = `
-            <tr class="occupation-row" data-event-occupation-id="${eventOccupation.eventOccupationId}">
+            <tr class="occupation-row" data-event-occupation-id="${eventOccupationId}" data-occupation-id="${occupation.id}">
                 <td class="occupation-name">${occupation.name}</td>
                 <td>
-                    <input type="checkbox" class="form-check-input occupation-checkbox" ${eventOccupation.isIncluded ? '' : 'checked'}>
+                    <input type="checkbox" class="form-check-input occupation-checkbox" ${isChecked ? 'checked' : ''}>
                 </td>
                 <td>
-                    <input type="number" class="form-control mentor-diak-count" min="0" value="${eventOccupation.mentorCount}">
+                    <input type="number" class="form-control mentor-diak-count" min="0" value="${mentorCount}">
                 </td>
                 <td>
-                    <input type="number" class="form-control mentor-tanar-count" min="0" value="${eventOccupation.teacherCount}">
+                    <input type="number" class="form-control mentor-tanar-count" min="0" value="${teacherCount}">
                 </td>
                 <td>
-                    <input type="number" class="form-control hours-count" min="0" value="${eventOccupation.hoursCount}">
+                    <input type="number" class="form-control hours-count" min="0" value="${hoursCount}">
                 </td>
                 <td>
-                    <select class="form-control workload-select">
-                        <option value="high" ${eventOccupation.busyness === 'high' ? 'selected' : ''}>Magas</option>
-                        <option value="low" ${eventOccupation.busyness === 'low' ? 'selected' : ''}>Alacsony</option>
+                    <select class="form-control busyness-select">
+                        <option value="high" ${busyness === 'high' ? 'selected' : ''}>Magas</option>
+                        <option value="low" ${busyness === 'low' ? 'selected' : ''}>Alacsony</option>
                     </select>
                 </td>
             </tr>`;
-        $('#occupationsTableContainer tbody').append(row);
+        $('#eventOccupationsTable tbody').append(row);
     }
     
 
@@ -275,25 +279,20 @@ $(document).ready(function() {
         const eventId = $('#eventSelect').val(); // Get the selected event ID.
         const occupationsData = [];
 
-        // Iterate over each occupation row.  Use the .each() method with a standard function
         $('.occupation-row').each(function() {
             const row = $(this);
-            const eventOccupationId = parseInt(row.data('event-occupation-id'), 10);
             const isChecked = row.find('.occupation-checkbox').prop('checked');
             const mentorDiakCount = parseInt(row.find('.mentor-diak-count').val(), 10);
             const mentorTanarCount = parseInt(row.find('.mentor-tanar-count').val(), 10);
-            const workload = row.find('.workload-select').val();
+            const busyness = row.find('.busyness-select').val();
             const hours_count = parseInt(row.find('.hours-count').val(), 10);
-            const eventOccupation = eventOccupationContainer.getEventOccupationById(eventOccupationId);
-
-            if(eventOccupation && isChecked) { //if it exists and is checked, add
+            if(isChecked) {
                 occupationsData.push({
-                        event_workshop_id: eventOccupation.eventOccupationId,  // Use eventOccupationId
-                        event_id: eventOccupation.eventId, // Include eventId
-                        workshop_id: eventOccupation.occupationId,
+                        event_id: eventId, 
+                        workshop_id: row.data('occupation-id'),
                         number_of_mentors_required: mentorDiakCount,
                         number_of_teachers_required: mentorTanarCount,
-                        busyness: workload,
+                        busyness: busyness,
                         max_workable_hours: hours_count
                 });
             }

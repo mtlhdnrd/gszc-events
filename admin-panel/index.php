@@ -133,7 +133,7 @@
                     </select>
                 </div>
 
-                <div id="occupationsTableContainer" style="display: none;">
+                <div id="eventOccupationsTableContainer" style="display: none;">
                     <table class="table mt-3" id="eventOccupationsTable">
                         <thead>
                             <tr>
@@ -146,7 +146,6 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Table rows will be added here dynamically -->
                         </tbody>
                     </table>
                     <button id="saveOccupationsBtn" class="btn btn-primary">Mentés</button>
