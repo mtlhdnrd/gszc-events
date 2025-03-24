@@ -223,21 +223,15 @@
                                     <input type="email" class="form-control" id="studentEmail" name="studentEmail">
                                 </div>
                                 <div class="form-group">
-                                    <label for="headTeacherSelect">Osztályfőnök:</label>
-                                    <select class="form-control" id="headTeacherSelect" name="headTeacherSelect">
-                                        <!-- Head teachers will be loaded here -->
+                                    <label for="schoolSelect">Iskola:</label>
+                                    <select class="form-control" id="schoolSelect" name="schoolSelect">
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="studentSchoolName">Iskola neve:</label>
-                                    <input type="text" class="form-control" id="studentSchoolName"
-                                        name="studentSchoolName">
+                                    <label for="headTeacherSelect">Osztályfőnök:</label>
+                                    <select class="form-control" id="headTeacherSelect" name="headTeacherSelect">
+                                    </select>
                                 </div>
-                                <div class="form-group">
-                                    <label for="studentSchoolId">OM Azonosító:</label>
-                                    <input type="text" class="form-control" id="studentSchoolId" name="studentSchoolId">
-                                </div>
-
                             </form>
                         </div>
                         <div class="modal-footer">
@@ -379,8 +373,8 @@
     <script src="js/script.js"></script>
     <script src="js/events.js"></script>
     <script src="js/occupations.js"></script>
-    <!--script src="js/students.js"></script>
-    <script src="js/rankings.js"></script>
+    <script src="js/students.js"></script>
+    <!--script src="js/rankings.js"></script>
     <script src="js/headteachers.js"></script>
     <script src="js/invitations.js"></script-->
 </body>

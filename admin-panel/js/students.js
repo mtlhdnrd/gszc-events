@@ -188,8 +188,9 @@ $(document).ready(function () {
 
     function startEditingStudent(row) {
         row.find('input.student-data').removeAttr('readonly');
-        // Make the head teacher select editable (it's not an input)
         row.find('.head-teacher-select').prop('disabled', false);
+        row.find('.school-select').prop('disabled', false);
+
 
         row.find('.edit-button').text('Mentés');
         let cancelBtn = $('<button class="btn btn-secondary btn-sm cancel-button">Mégse</button>');
@@ -216,7 +217,7 @@ $(document).ready(function () {
         // AJAX call to update the student
         $.ajax({
             url: "../backend/api/students/update_student.php",
-            type: "POST", 
+            type: "POST",
             data: updatedData,
             success: function(response, textStatus, jqXHR) {
                 if (jqXHR.status === 204) {
@@ -488,8 +489,8 @@ $(document).ready(function () {
     row.append($('<td>').append($('<input type="text" class="form-control student-data" data-field="name" readonly>').val(student.name)));
     row.append($('<td>').append($('<input type="text" class="form-control student-data" data-field="email" readonly>').val(student.email)));
 
-    let headTeacherSelect = $('<select class="form-control head-teacher-select" disabled></select>'); // Initially disabled
-
+    let schoolSelect = $('<select class="form-control school-select" disabled></select>');
+    let headTeacherSelect = $('<select class="form-control head-teacher-select" disabled></select>');
     headTeacherContainer.getAllHeadTeachers().forEach(ht => {
         let option = $('<option>').val(ht.id).text(ht.name);
 
