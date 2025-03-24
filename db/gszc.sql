@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 24, 2025 at 10:39 AM
+-- Generation Time: Mar 24, 2025 at 08:01 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -124,6 +124,13 @@ CREATE TABLE `participants` (
   `events_elapsed` int(11) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `participants`
+--
+
+INSERT INTO `participants` (`user_id`, `name`, `email`, `type`, `teacher_id`, `school_id`, `total_hours_worked`, `events_elapsed`) VALUES
+(13, 'Gizmó', 'gizmo@gmail.com', 'teacher', NULL, 1, 0, 0);
+
 -- --------------------------------------------------------
 
 --
@@ -202,6 +209,17 @@ CREATE TABLE `users` (
   `username` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`user_id`, `username`, `password`) VALUES
+(8, 'fsdfdsfs', '$2y$10$E.QzrEsvd4WZR1z4Y/oeMO4ksgWZsWqEf2kf/2dh9.NagKWlne6Em'),
+(9, 'gizmo', '$2y$10$dJnCofk1XDxG8FkoWwa7xOj8sc9tp2Mq8/H5zpvsfHm3HXCfe/tJm'),
+(10, 'fsdfsdfsdfsd', '$2y$10$d0cyuAmYmuNTTfbXImZ91utRUUi1l5uKRqpv7aZhZAlBWcKULkYBa'),
+(11, 'fsdfsd', '$2y$10$Hl.OUQH/AEyiE/nnRLEAK.DdhrsnYBKO2k2ijJJtQl95W3chLoAUy'),
+(13, 'gizmoszorosteste', '$2y$10$JzggukA.HjfSRjoPb9yyY.SXoRqlY8xCI4jpZmULRAz7sJUwpGjL.');
 
 -- --------------------------------------------------------
 
@@ -392,7 +410,7 @@ ALTER TABLE `teachers`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `workshops`
@@ -442,7 +460,7 @@ ALTER TABLE `mentor_workshop`
 -- Constraints for table `participants`
 --
 ALTER TABLE `participants`
-  ADD CONSTRAINT `participants_ibfk_1` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`teacher_id`),
+  ADD CONSTRAINT `participants_ibfk_1` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`teacher_id`) ON DELETE SET NULL,
   ADD CONSTRAINT `participants_ibfk_2` FOREIGN KEY (`school_id`) REFERENCES `schools` (`school_id`),
   ADD CONSTRAINT `participants_ibfk_3` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
 
