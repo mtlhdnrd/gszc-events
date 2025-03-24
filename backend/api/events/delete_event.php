@@ -1,6 +1,6 @@
 <?php
-    require_once $_SERVER["DOCUMENT_ROOT"]."/bgszc-events/backend/config.php";
-    require_once $_SERVER["DOCUMENT_ROOT"]."/bgszc-events/backend/api_utils.php";
+        require_once "../../config.php";
+        require_once "../../api_utils.php";
     if(validate_request("DELETE", array("event_id"))) {
         $event_id = $_GET["event_id"];
         $query = "DELETE FROM `events` WHERE `event_id` = ?;";

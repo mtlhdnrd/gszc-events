@@ -15,7 +15,7 @@ if (validate_request("GET", array())) {
                 sch.name AS schoolName,
                 sch.school_id,
                 s.total_hours_worked
-              FROM students s
+              FROM participants s
               INNER JOIN users u ON s.user_id = u.user_id
               INNER JOIN teachers t ON s.teacher_id = t.teacher_id
               INNER JOIN schools sch ON s.school_id = sch.school_id;";

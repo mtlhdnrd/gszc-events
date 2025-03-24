@@ -1,10 +1,9 @@
 class Event {
-    constructor(id, name, date, location, loadLevel, status) {
+    constructor(id, name, date, location, status) {
         this.id = id;
         this.name = name;
         this.date = date;
         this.location = location;
-        this.loadLevel = loadLevel;
         this.status = status;
     }
 
@@ -16,7 +15,6 @@ class Event {
         if (newData.name) this.name = newData.name;
         if (newData.date) this.date = newData.date;
         if (newData.location) this.location = newData.location;
-        if (newData.loadLevel) this.loadLevel = newData.loadLevel;
         if (newData.status) this.status = newData.status;
     }
     toJson() {
@@ -25,8 +23,7 @@ class Event {
             date: this.date,
             location: this.location,
             status: this.status,
-            busyness: this.loadLevel == "magas" ? "high" : "low"
-        };
+    };
     }
 }
 class EventContainer {
@@ -66,10 +63,6 @@ class EventContainer {
     }
 }
 var eventContainer = new EventContainer();
-const event1 = new Event(1, "Dance Rehearsal", "2024-03-15", "School Hall", "high", "ready");
-const event2 = new Event(2, "Poetry Slam", "2024-03-22", "Gym", "low", "pending");
-eventContainer.addEvent(event1);
-eventContainer.addEvent(event2);
 const retrievedEvent = eventContainer.getEventById(1);
 
 
@@ -104,30 +97,24 @@ $(document).ready(function () {
         });
     }
     function finishEditing(row) {
+        let eventId = parseInt(row.find('.event-id').text(), 10);
         // Get the updated data from the input fields
         let updatedData = {
-            event_id:  parseInt(row.find('.event-id').text(), 10),
+            event_id: eventId,
             name: row.find('input[data-field="name"]').val(),
             date: row.find('input[data-field="date"]').val(),
             location: row.find('input[data-field="location"]').val(),
-            status: row.find('select[data-field="status"]').val(),
-            busyness: row.find('input[data-field="loadLevel"]').val()
+            status: row.find('select[data-field="status"]').val()
         };
-
-        // Get the event ID from the hidden span
-        let eventId = parseInt(row.find('.event-id').text(), 10);
 
         // Update the event in the container
         if (eventContainer.updateEvent(eventId, updatedData)) {
-            console.log("Event updated in container.  Ready to save to server:", eventId, updatedData);
+            console.log("Event updated in container.  Ready to save to server:", updatedData);
             $.ajax({
                 type: "POST",
                 url: "../backend/api/events/update_event.php",
                 dataType: 'json',
-                data: {
-                    event_id: eventId, 
-                    ...updatedData
-                },
+                data: updatedData,
                 success: function(data) {
                     console.log("Event updated on server:", data);
                     alert("Esemény sikeresen frissítve!");
@@ -174,7 +161,7 @@ $(document).ready(function () {
         if (confirm('Biztosan törölni szeretnéd?')) {
             $.ajax({
                 type: "DELETE",
-                url: `http://localhost/bgszc-events/backend/api/events/delete_event.php?event_id=${id}`,//FIXME: localhost address?
+                url: `../backend/api/events/delete_event.php?event_id=${id}`,
                 success: function(data){
                     row.remove();
                 },
@@ -196,11 +183,10 @@ $(document).ready(function () {
             name: $('#eventName').val(),
             date: $('#eventDate').val(),
             location: $('#eventLocation').val(),
-            loadLevel: $('#eventLoadLevel').val(),
             status: $('#eventStatus').val()
         };
         // Input validation
-        if (!eventData.name || !eventData.date || !eventData.location || !eventData.loadLevel) {
+        if (!eventData.name || !eventData.date || !eventData.location) {
             alert('Kérlek tölts ki minden mezőt!');
             return;
         }
@@ -221,14 +207,12 @@ $(document).ready(function () {
             dataType: 'json',
             success: function (data) {
                 eventContainer.events = [];
-
                 data.forEach(function (eventData) {
                     const event = new Event(
                         eventData.event_id,
                         eventData.name,
                         eventData.date,
                         eventData.location,
-                        eventData.busyness,
                         eventData.status
                     );
                     eventContainer.addEvent(event);
@@ -256,7 +240,6 @@ $(document).ready(function () {
         row.append($('<td>').append($('<input type="text" class="form-control event-data" data-field="name" readonly>').val(event.name)));
         row.append($('<td>').append($('<input type="text" class="form-control event-data" data-field="date" readonly>').val(event.date)));
         row.append($('<td>').append($('<input type="text" class="form-control event-data" data-field="location" readonly>').val(event.location)));
-        row.append($('<td>').append($('<input type="text" class="form-control event-data" data-field="loadLevel" readonly>').val(event.loadLevel)));
 
         // --- Status Dropdown (Corrected) ---
         let statusSelect = $('<select class="form-control event-status" data-field="status" disabled></select>');
@@ -315,7 +298,7 @@ $(document).ready(function () {
         $('#newEventModal').modal('hide');
         $('#newEventForm')[0].reset();
         let newId = maxId + 1;
-        const newEvent = new Event(newId, eventData.name, eventData.date, eventData.location, eventData.loadLevel, eventData.status);
+        const newEvent = new Event(newId, eventData.name, eventData.date, eventData.location, eventData.status);
         $.ajax({
             type: "POST",
             url: "../backend/api/events/add_event.php",

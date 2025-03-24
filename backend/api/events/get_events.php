@@ -1,9 +1,9 @@
 <?php
-    require_once $_SERVER["DOCUMENT_ROOT"]."/bgszc-events/backend/config.php";
-    require_once $_SERVER["DOCUMENT_ROOT"]."/bgszc-events/backend/api_utils.php";
+    require_once "../../config.php";
+    require_once "../../api_utils.php";
     if(validate_request("GET", array())) {
         header("Content-Type: application/json");
-        $query = "SELECT `event_id`, `name`, `date`, `location`, `status`, `busyness` FROM `events`;";
+        $query = "SELECT `event_id`, `name`, `date`, `location`, `status` FROM `events`;";
         $stmt = $conn->prepare($query);
         if($stmt->execute()) {
             echo json_encode($stmt->get_result()->fetch_all(MYSQLI_ASSOC));

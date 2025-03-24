@@ -1,7 +1,6 @@
 <?php
-// get_event_workshops.php
-require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/config.php";
-require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/api_utils.php";
+    require_once "../../config.php";
+    require_once "../../api_utils.php";
 
 if (validate_request("GET", array())) {
 
@@ -12,7 +11,9 @@ if (validate_request("GET", array())) {
                 e.event_id AS event_id,
                 w.workshop_id AS workshop_id,
                 ew.number_of_mentors_required,
-                ew.max_workable_hours
+                ew.number_of_teachers_required,
+                ew.max_workable_hours,
+                ew.busyness
               FROM event_workshop ew
               INNER JOIN events e ON ew.event_id = e.event_id
               INNER JOIN workshops w ON ew.workshop_id = w.workshop_id;";

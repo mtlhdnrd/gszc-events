@@ -44,6 +44,9 @@ $(document).ready(function() {
     $('#eventSelectRanking').change(updateOccupationDropdown);
     $('#addEventSelectRanking').change(updateAddOccupationDropdown);
 
+    $(document).on('eventAdded', loadEventsIntoSelect);
+    $(document).on('workshopAdded', updateOccupationDropdown);
+
     // --- Load Initial Data (Placeholder) ---
 
     loadEventsIntoSelect("#eventSelectRanking");
