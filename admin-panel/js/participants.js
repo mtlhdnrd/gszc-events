@@ -91,13 +91,10 @@ class MentorTeacherContainer {
     }
     // No update method needed
 }
-
-let participantType = 'student'; 
-
 // --- Global Instances ---
 const mentorStudentContainer = new MentorStudentContainer();
 const mentorTeacherContainer = new MentorTeacherContainer();
-const occupationContainer = new OccupationContainer();
+
 let currentParticipantType = 'student'; // Keep track of current view
 
 // --- Utility Functions ---
@@ -126,6 +123,7 @@ function populateSchoolsDropdown(dropdownId, selectedSchoolId = null) {
         }
     });
 }
+
 function populateTeachersDropdown(dropdownId, schoolId, selectedTeacherId = null) {
      if (!schoolId) {
         $(`#${dropdownId}`).html('<option value="">Válassz osztályfőnököt</option>');
@@ -208,6 +206,7 @@ function loadParticipants(type) {
                 }
                 addParticipantRow(participant);
             });
+            $(document).trigger("participantsLoaded");
         },
         error: function(xhr, status, error) {
             console.error("Error loading participants:", status, error);
@@ -220,7 +219,8 @@ function loadParticipants(type) {
 $(document).ready(function() {
 
     // Initial load (default to students)
-    loadParticipants('student');
+    loadParticipants(currentParticipantType);
+    $(document).on('participantsLoaded', initMentorWorkshops);
 
     // --- Button Clicks ---
     $('#showStudentsBtn').click(function() {
@@ -241,9 +241,17 @@ $(document).ready(function() {
 
     $('#addParticipantBtn').click(function() {
         if (currentParticipantType === 'student') {
+            // Clear input fields for the student modal
+            $('#addStudentModal').find('input').val('');  
+            $('#addStudentModal').find('select').val(''); 
+
             populateSchoolsDropdown('studentSchool');
             $('#addStudentModal').modal('show');
         } else {
+            // Clear input fields for the teacher modal
+            $('#addTeacherModal').find('input').val(''); 
+            $('#addTeacherModal').find('select').val('');
+
             populateSchoolsDropdown('teacherSchool');
             $('#addTeacherModal').modal('show');
         }
@@ -524,4 +532,78 @@ $('#saveEditedParticipantBtn').click(function() {
             populateTeachersDropdown('editParticipantTeacher', schoolId);
         }
     });
+    function loadMentorsIntoSelect() {
+        let mentors;
+        if (currentParticipantType == 'student') {
+            mentors = mentorStudentContainer.getAllStudents();
+        } else {
+            mentors = mentorTeacherContainer.getAllTeachers();
+        }
+        const $mentorSelect = $('#mentorSelect');
+        $mentorSelect.empty().append('<option value="">Válassz mentort</option>'); // Clear and add default
+        mentors.forEach(mentor => {
+            $mentorSelect.append(`<option value="${mentor.userId}">${mentor.name}</option>`);
+        });
+    }
+    function loadOccupationsIntoSelect() {
+        $.ajax({
+            url: '../backend/api/workshops/get_workshops.php',
+            type: 'GET',
+            dataType: 'json',
+            success: function(workshops) {
+                occupationContainer.occupations = []; //Clear local data
+                const $occupationSelect = $('#occupationSelect'); // Use jQuery object
+                $occupationSelect.empty().append('<option value="">Válassz foglalkozást</option>');
+
+                workshops.forEach(workshop => {
+                    // Add to your occupationContainer
+                   const occupation = new Occupation(workshop.workshop_id, workshop.name);
+                   occupationContainer.addOccupation(occupation);
+
+                    // Add to the dropdown
+                    $occupationSelect.append(`<option value="${workshop.workshop_id}">${workshop.name}</option>`);
+                });
+            },
+            error: function(xhr, status, error) {
+                console.error("Error loading occupations:", status, error);
+                alert("Hiba történt a foglalkozások betöltésekor.");
+            }
+        });
+    }
+
+    $('#addMentorOccupationBtn').on('click', function() {
+        const mentorId = $('#mentorSelect').val();
+        const occupationId = $('#occupationSelect').val();
+
+        if (!mentorId || !occupationId) {
+            alert("Kérlek válassz mentort és foglalkozást is!");
+            return;
+        }
+        $.ajax({
+            url: '../backend/api/mentor_workshops/add_mentor_workshop.php',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                user_id: parseInt(mentorId), // Ensure they are integers
+                workshop_id: parseInt(occupationId),
+                ranking_number: 1
+            }),
+            success: function(response) {
+                console.log('Mentor-Occupation assignment successful:', response);
+                alert('Sikeres hozzárendelés!');
+                // Consider clearing the dropdowns after success:
+                $('#mentorSelect').val('');
+                $('#occupationSelect').val('');
+            },
+            error: function(xhr, status, error) {
+                console.error('Mentor-Occupation assignment failed:', error, xhr.responseText);
+                alert('Hiba a hozzárendelés során! Részletek a konzolban.');
+            }
+        });
+    });
+    function initMentorWorkshops()
+    {
+        loadOccupationsIntoSelect();
+        loadMentorsIntoSelect();
+    }
 });

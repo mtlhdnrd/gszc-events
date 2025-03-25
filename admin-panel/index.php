@@ -153,7 +153,7 @@
             </div>
         </div>
 
-        <div id="participants" class="content-section">
+        <div id="participants" class="content-section" style="display: none;">
             <h1>Résztvevők Kezelése</h1>
 
             <div class="btn-group mb-3" role="group">

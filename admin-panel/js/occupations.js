@@ -311,7 +311,6 @@ $(document).ready(function() {
                 console.log('Save successful:', response);
                 alert('Sikeres mentés!');
                 loadEventOccupations();  // Reload after saving
-                $('#eventOccupationsTable tbody').empty();  // Clear rows.
             },
             error: function(xhr, status, error) {
                 console.error('Save failed:', error, xhr.responseText);
