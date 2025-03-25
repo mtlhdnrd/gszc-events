@@ -146,7 +146,7 @@ $(document).ready(function() {
                 const hoursCount = associatedEO ? associatedEO.hoursCount : 3;
                 const busyness = associatedEO ? associatedEO.busyness : 'high';
                 const eventOccupationId = associatedEO? associatedEO.eventOccupationId : -1;
-                addEventOccupationRow(occupation, true, mentorCount, teacherCount, hoursCount, busyness, eventOccupationId);
+                addEventOccupationRow(occupation, isChecked, mentorCount, teacherCount, hoursCount, busyness, eventOccupationId);
             });
             $('#eventOccupationsTableContainer').show();
         }
@@ -169,6 +169,7 @@ $(document).ready(function() {
                         eventData.status
                     );
                     eventContainer.addEvent(event);
+                    loadEventOccupations();
                 });
                 var events = eventContainer.getAllEvents(); // Use the existing eventContainer
                 let options = '<option value="">Válassz eseményt</option>';

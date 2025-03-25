@@ -25,7 +25,7 @@
                     <a class="nav-link" href="#" data-target="occupations">Foglalkozások</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#" data-target="students">Diákok</a>
+                    <a class="nav-link" href="#" data-target="participants">Résztvevők</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="#" data-target="rankings">Rangsorok</a>
@@ -153,92 +153,163 @@
             </div>
         </div>
 
-        <div id="students" class="content-section" style="display: none;">
-            <h1>Diákok kezelése</h1>
-            <button id="newStudentBtn" class="btn btn-primary mb-3">Új diák</button>
+        <div id="participants" class="content-section" style="display:none;">
+            <h1>Résztvevők Kezelése</h1>
 
-            <table class="table table-striped table-bordered" id="studentsTable">
+            <div class="btn-group mb-3" role="group">
+                <button type="button" class="btn btn-primary" id="showStudentsBtn">Mentordiák</button>
+                <button type="button" class="btn btn-secondary" id="showTeachersBtn">Mentortanár</button>
+            </div>
+
+            <button type="button" class="btn btn-success mb-3" id="addParticipantBtn">Új résztvevő</button>
+
+            <table class="table table-striped table-bordered" id="participantsTable">
                 <thead>
                     <tr>
-                        <th>Azonosító</th>
-                        <th>Felhasználónév</th>
+                        <th>ID</th>
                         <th>Név</th>
                         <th>Email</th>
-                        <th>Osztályfőnök</th>
                         <th>Iskola</th>
-                        <th>OM Azonosító</th>
-                        <th>Ledolgozott órák</th>
+                        <th>Osztályfőnök (Diák)</th> <!-- Only for students -->
                         <th>Műveletek</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Students will be loaded here -->
+                    <!-- Participants will be loaded here -->
                 </tbody>
             </table>
 
-            <h2 class="mt-4">Diák Foglalkozás Hozzárendelés</h2>
-            <div class="form-group">
-                <label for="studentSelect">Diák:</label>
-                <select class="form-control" id="studentSelect">
-                    <option value="">Válassz diákot</option>
-                    <!-- Students will be loaded here -->
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="occupationSelect">Foglalkozás:</label>
-                <select class="form-control" id="occupationSelectStudent">
-                    <option value="">Válassz foglalkozást</option>
-                    <!-- Occupations will be loaded here (from occupations.js) -->
-                </select>
-            </div>
-            <button id="addStudentOccupationBtn" class="btn btn-primary">Hozzárendelés</button>
-            <!-- Modal for New Student -->
-            <div class="modal fade" id="newStudentModal" tabindex="-1" role="dialog"
-                aria-labelledby="newStudentModalLabel" aria-hidden="true">
+            <!-- Add Student Modal -->
+            <div class="modal fade" id="addStudentModal" tabindex="-1" role="dialog" aria-labelledby="addStudentModalLabel" aria-hidden="true">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="newStudentModalLabel">Új diák felvétele</h5>
+                            <h5 class="modal-title" id="addStudentModalLabel">Új Mentordiák Hozzáadása</h5>
                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">×</span>
                             </button>
                         </div>
                         <div class="modal-body">
-                            <form id="newStudentForm">
-                                <div class="form-group">
-                                    <label for="studentUsername">Felhasználónév:</label>
-                                    <input type="text" class="form-control" id="studentUsername" name="studentUsername">
-                                </div>
-                                <div class="form-group">
-                                    <label for="studentPassword">Jelszó:</label>
-                                    <input type="password" class="form-control" id="studentPassword"
-                                        name="studentPassword">
-                                </div>
-                                <div class="form-group">
-                                    <label for="studentName">Név:</label>
-                                    <input type="text" class="form-control" id="studentName" name="studentName">
-                                </div>
-                                <div class="form-group">
-                                    <label for="studentEmail">Email:</label>
-                                    <input type="email" class="form-control" id="studentEmail" name="studentEmail">
-                                </div>
-                                <div class="form-group">
-                                    <label for="schoolSelect">Iskola:</label>
-                                    <select class="form-control" id="schoolSelect" name="schoolSelect">
-                                        <!-- Schools will be loaded here -->
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="headTeacherSelect">Osztályfőnök:</label>
-                                    <select class="form-control" id="headTeacherSelect" name="headTeacherSelect">
-                                        <!-- Head teachers will be loaded here -->
-                                    </select>
-                                </div>
-                            </form>
+                            <div class="form-group">
+                                <label for="studentName">Név</label>
+                                <input type="text" class="form-control" id="studentName">
+                            </div>
+                            <div class="form-group">
+                                <label for="studentEmail">Email</label>
+                                <input type="email" class="form-control" id="studentEmail">
+                            </div>
+                            <div class="form-group"> <!-- Username -->
+                                <label for="studentUsername">Felhasználónév</label>
+                                <input type="text" class="form-control" id="studentUsername">
+                            </div>
+                            <div class="form-group"><!--  Password -->
+                                <label for="studentPassword">Jelszó</label>
+                                <input type="password" class="form-control" id="studentPassword">
+                            </div>
+                            <div class="form-group">
+                                <label for="studentSchool">Iskola</label>
+                                <select class="form-control" id="studentSchool">
+                                    <option value="">Válassz iskolát</option>
+                                    <!-- Schools will be loaded here -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="studentTeacher">Osztályfőnök</label>
+                                <select class="form-control" id="studentTeacher">
+                                    <option value="">Válassz osztályfőnököt</option>
+                                    <!-- Teachers will be loaded here -->
+                                </select>
+                            </div>
+
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Mégse</button>
-                            <button type="button" class="btn btn-primary" id="saveNewStudentBtn">Mentés</button>
+                            <button type="button" class="btn btn-primary" id="saveStudentBtn">Mentés</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Teacher Modal -->
+            <div class="modal fade" id="addTeacherModal" tabindex="-1" role="dialog" aria-labelledby="addTeacherModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="addTeacherModalLabel">Új Mentortanár Hozzáadása</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">×</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="teacherName">Név</label>
+                                <input type="text" class="form-control" id="teacherName">
+                            </div>
+                            <div class="form-group">
+                                <label for="teacherEmail">Email</label>
+                                <input type="email" class="form-control" id="teacherEmail">
+                            </div>
+                            <div class="form-group"> <!-- Username -->
+                                <label for="teacherUsername">Felhasználónév</label>
+                                <input type="text" class="form-control" id="teacherUsername">
+                            </div>
+                            <div class="form-group"><!--  Password -->
+                                <label for="teacherPassword">Jelszó</label>
+                                <input type="password" class="form-control" id="teacherPassword">
+                            </div>
+                            <div class="form-group">
+                                <label for="teacherSchool">Iskola</label>
+                                <select class="form-control" id="teacherSchool">
+                                    <option value="">Válassz iskolát</option>
+                                    <!-- Schools will be loaded here -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Mégse</button>
+                            <button type="button" class="btn btn-primary" id="saveTeacherBtn">Mentés</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Participant Modal (Shared) -->
+            <div class="modal fade" id="editParticipantModal" tabindex="-1" role="dialog" aria-labelledby="editParticipantModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editParticipantModalLabel">Résztvevő Szerkesztése</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">×</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="editParticipantId">
+                            <input type="hidden" id="editParticipantType">
+                            <div class="form-group">
+                                <label for="editParticipantName">Név</label>
+                                <input type="text" class="form-control" id="editParticipantName">
+                            </div>
+                            <div class="form-group">
+                                <label for="editParticipantEmail">Email</label>
+                                <input type="email" class="form-control" id="editParticipantEmail">
+                            </div>
+                            <div class="form-group">
+                                <label for="editParticipantSchool">Iskola</label>
+                                <select class="form-control" id="editParticipantSchool">
+                                    <!-- Schools will be loaded here -->
+                                </select>
+                            </div>
+                            <div class="form-group student-only-field">
+                                <label for="editParticipantTeacher">Osztályfőnök</label>
+                                <select class="form-control" id="editParticipantTeacher">
+                                    <!-- Teachers will be loaded here -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Mégse</button>
+                            <button type="button" class="btn btn-primary" id="saveEditedParticipantBtn">Mentés</button>
                         </div>
                     </div>
                 </div>
@@ -375,7 +446,11 @@
     <script src="js/script.js"></script>
     <script src="js/events.js"></script>
     <script src="js/occupations.js"></script>
+<<<<<<< HEAD
     <script src="js/students.js"></script>
+=======
+    <script src="js/participants.js"></script>
+>>>>>>> 8fccd0851cda706eb4f37428a97606482bedf710
     <!--script src="js/rankings.js"></script>
     <script src="js/headteachers.js"></script>
     <script src="js/invitations.js"></script-->
