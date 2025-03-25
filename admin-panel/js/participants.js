@@ -92,9 +92,12 @@ class MentorTeacherContainer {
     // No update method needed
 }
 
+let participantType = 'student'; 
+
 // --- Global Instances ---
 const mentorStudentContainer = new MentorStudentContainer();
 const mentorTeacherContainer = new MentorTeacherContainer();
+const occupationContainer = new OccupationContainer();
 let currentParticipantType = 'student'; // Keep track of current view
 
 // --- Utility Functions ---
@@ -270,12 +273,11 @@ $(document).ready(function() {
         data: { username: newStudent.username, password: password },
         success: function(userResponse) {
             const userId = parseInt(userResponse.user_id);  //Get user id
-
             $.ajax({
                 url: '../backend/api/participants/add_participant.php',
                 type: 'POST',
                 dataType: 'json',
-                data: {  user_id: userId,...newStudent.toJson() },
+                data: {...newStudent.toJson(), user_id:userId},
                 success: function(response) {
                     newStudent.userId = userId; // Set the user ID from the response
                     mentorStudentContainer.addStudent(newStudent);

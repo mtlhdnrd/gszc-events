@@ -3,11 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
-<<<<<<< HEAD
--- Generation Time: Mar 23, 2025 at 03:05 PM
-=======
--- Generation Time: Mar 24, 2025 at 08:01 PM
->>>>>>> 8fccd0851cda706eb4f37428a97606482bedf710
+-- Generation Time: Mar 25, 2025 at 03:33 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -69,12 +65,8 @@ CREATE TABLE `events` (
 --
 
 INSERT INTO `events` (`event_id`, `name`, `date`, `location`, `status`) VALUES
-<<<<<<< HEAD
-(7, 'Erdély visszafoglalása', '2025-03-24', 'Erdély', 'ready');
-=======
 (6, 'Hygger', '2025-03-27', 'home', 'failed'),
 (8, 'fsdfsdfsdf', '2025-03-19', 'fdsfsd', 'ready');
->>>>>>> 8fccd0851cda706eb4f37428a97606482bedf710
 
 -- --------------------------------------------------------
 
@@ -92,8 +84,6 @@ CREATE TABLE `event_workshop` (
   `busyness` enum('low','high') NOT NULL DEFAULT 'high'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-<<<<<<< HEAD
-=======
 --
 -- Dumping data for table `event_workshop`
 --
@@ -104,7 +94,6 @@ INSERT INTO `event_workshop` (`event_workshop_id`, `event_id`, `workshop_id`, `m
 (15, 8, 5, 5, 3, 1, 'high'),
 (16, 8, 6, 5, 3, 1, 'high');
 
->>>>>>> 8fccd0851cda706eb4f37428a97606482bedf710
 -- --------------------------------------------------------
 
 --
@@ -140,7 +129,8 @@ CREATE TABLE `participants` (
 --
 
 INSERT INTO `participants` (`user_id`, `name`, `email`, `type`, `teacher_id`, `school_id`, `total_hours_worked`, `events_elapsed`) VALUES
-(13, 'Gizmó', 'gizmo@gmail.com', 'teacher', NULL, 1, 0, 0);
+(21, 'Bartos Ferenc25', 'gizmodiak@gmail.com', 'student', 1, 1, 0, 0),
+(22, 'Kovács lajos 33', 'same', 'teacher', NULL, 1, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -226,11 +216,8 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`user_id`, `username`, `password`) VALUES
-(8, 'fsdfdsfs', '$2y$10$E.QzrEsvd4WZR1z4Y/oeMO4ksgWZsWqEf2kf/2dh9.NagKWlne6Em'),
-(9, 'gizmo', '$2y$10$dJnCofk1XDxG8FkoWwa7xOj8sc9tp2Mq8/H5zpvsfHm3HXCfe/tJm'),
-(10, 'fsdfsdfsdfsd', '$2y$10$d0cyuAmYmuNTTfbXImZ91utRUUi1l5uKRqpv7aZhZAlBWcKULkYBa'),
-(11, 'fsdfsd', '$2y$10$Hl.OUQH/AEyiE/nnRLEAK.DdhrsnYBKO2k2ijJJtQl95W3chLoAUy'),
-(13, 'gizmoszorosteste', '$2y$10$JzggukA.HjfSRjoPb9yyY.SXoRqlY8xCI4jpZmULRAz7sJUwpGjL.');
+(21, 'dsfdsjflkdsjfds', '$2y$10$h/5Fp1ORAYjy7Lsk1xQLFuhfi5MBQfN1I58PWfG3V9rOuSONOFNHm'),
+(22, 'lacika', '$2y$10$4XYlBntJgdkaFijZmwLLj.na5o530iJXrY.u.KU3iXaLj3V4cbLrK');
 
 -- --------------------------------------------------------
 
@@ -249,14 +236,9 @@ CREATE TABLE `workshops` (
 --
 
 INSERT INTO `workshops` (`workshop_id`, `name`, `description`) VALUES
-<<<<<<< HEAD
-(10, 'Visszafoglalás békével', 'Iskolai foglalkozás'),
-(11, 'Diplomáciai úton', 'Iskolai foglalkozás');
-=======
 (4, 'Kyra simogatás', 'Iskolai foglalkozás'),
 (5, 'Chug simogatás', 'Iskolai foglalkozás'),
 (6, 'Gizmo simogatás', 'Iskolai foglalkozás');
->>>>>>> 8fccd0851cda706eb4f37428a97606482bedf710
 
 -- --------------------------------------------------------
 
@@ -347,11 +329,7 @@ ALTER TABLE `schools`
 --
 ALTER TABLE `teachers`
   ADD PRIMARY KEY (`teacher_id`),
-<<<<<<< HEAD
-  ADD KEY `school_id` (`school_id`);
-=======
   ADD KEY `fk_teacher_school` (`school_id`);
->>>>>>> 8fccd0851cda706eb4f37428a97606482bedf710
 
 --
 -- Indexes for table `users`
@@ -388,21 +366,13 @@ ALTER TABLE `attendance_sheets`
 -- AUTO_INCREMENT for table `events`
 --
 ALTER TABLE `events`
-<<<<<<< HEAD
-  MODIFY `event_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
-=======
   MODIFY `event_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
->>>>>>> 8fccd0851cda706eb4f37428a97606482bedf710
 
 --
 -- AUTO_INCREMENT for table `event_workshop`
 --
 ALTER TABLE `event_workshop`
-<<<<<<< HEAD
-  MODIFY `event_workshop_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
-=======
   MODIFY `event_workshop_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
->>>>>>> 8fccd0851cda706eb4f37428a97606482bedf710
 
 --
 -- AUTO_INCREMENT for table `mentor_workshop`
@@ -438,17 +408,13 @@ ALTER TABLE `teachers`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `workshops`
 --
 ALTER TABLE `workshops`
-<<<<<<< HEAD
-  MODIFY `workshop_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
-=======
   MODIFY `workshop_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
->>>>>>> 8fccd0851cda706eb4f37428a97606482bedf710
 
 --
 -- AUTO_INCREMENT for table `workshop_ranking`
@@ -494,7 +460,7 @@ ALTER TABLE `mentor_workshop`
 ALTER TABLE `participants`
   ADD CONSTRAINT `participants_ibfk_1` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`teacher_id`) ON DELETE SET NULL,
   ADD CONSTRAINT `participants_ibfk_2` FOREIGN KEY (`school_id`) REFERENCES `schools` (`school_id`),
-  ADD CONSTRAINT `participants_ibfk_3` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
+  ADD CONSTRAINT `participants_ibfk_3` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `participant_invitations`
@@ -514,11 +480,7 @@ ALTER TABLE `rankings`
 -- Constraints for table `teachers`
 --
 ALTER TABLE `teachers`
-<<<<<<< HEAD
-  ADD CONSTRAINT `teachers_ibfk_1` FOREIGN KEY (`school_id`) REFERENCES `schools` (`school_id`) ON DELETE CASCADE;
-=======
   ADD CONSTRAINT `fk_teacher_school` FOREIGN KEY (`school_id`) REFERENCES `schools` (`school_id`) ON DELETE CASCADE;
->>>>>>> 8fccd0851cda706eb4f37428a97606482bedf710
 
 --
 -- Constraints for table `workshop_ranking`
