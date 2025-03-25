@@ -1,5 +1,9 @@
 <?php
-    function validate_request($method, $params) {
+    function validate_request($method, $required_fields) {
+        if ($_SERVER['REQUEST_METHOD'] !== $method) {
+            return false;
+        }
+    
         $method_superglobal = array();
         switch ($method) {
             case "GET":
@@ -14,13 +18,15 @@
             default:
                 return false;
         }
-
-        $array_all = true;
-        foreach($params as $param) {
-            $array_all = $array_all && isset($method_superglobal[$param]);
+    
+    
+        foreach ($required_fields as $field) {
+            if (!isset($method_superglobal[$field])) {
+                return false;
+            }
         }
-
-        return $_SERVER["REQUEST_METHOD"] == $method && count($method_superglobal) == count($params) && $array_all;
+    
+        return true;
     }
 // api_utils.php (példa)
 function validate_request_json($method, $required_params) {
