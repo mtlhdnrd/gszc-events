@@ -60,14 +60,16 @@ class StudentContainer {
 }
 // --- HeadTeacher Class and Container ---
 class HeadTeacher {
-    constructor(id, name, email, phone) {
+    constructor(id, name, schoolId, email, phone) {
         this.id = id;
         this.name = name;
+        this.schoolId = schoolId;
         this.email = email;
         this.phone = phone;
     }
     update(newData) {
         if (newData.name) this.name = newData.name;
+        if (newData.schoolId) this.schoolId = newData.schoolId;
         if (newData.email) this.email = newData.email;
         if (newData.phone) this.phone = newData.phone;
     }
@@ -75,6 +77,7 @@ class HeadTeacher {
     toJson() {
         return {
             name: this.name,
+            school_id: this.schoolId,
             email: this.email,
             phone: this.phone
         };
