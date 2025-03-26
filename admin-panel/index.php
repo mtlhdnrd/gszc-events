@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Felület</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -336,6 +337,56 @@
         </div>
         <div id="rankings" class="content-section" style="display: none;">
             <h1>Rangsorok kezelése</h1>
+
+            <!-- Student/Teacher Toggle -->
+            <div class="btn-group mb-3" role="group">
+                <button type="button" class="btn btn-primary" id="showStudentRankingsBtn">Mentordiák Rangsor</button>
+                <button type="button" class="btn btn-secondary" id="showTeacherRankingsBtn">Mentortanár Rangsor</button>
+            </div>
+
+            <!-- Select Options -->
+            <div class="row">
+                <div class="col-md-5">
+                    <div class="form-group">
+                        <label for="rankingEventSelect">Esemény:</label>
+                        <select class="form-control" id="rankingEventSelect">
+                            <option value="">Válassz eseményt</option>
+                            <!-- Events will be loaded here -->
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <div class="form-group">
+                        <label for="rankingWorkshopSelect">Foglalkozás:</label>
+                        <select class="form-control" id="rankingWorkshopSelect" disabled>
+                            <option value="">Előbb válassz eseményt</option>
+                            <!-- Workshops for the selected event will be loaded here -->
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="button" class="btn btn-info mb-3 w-100" id="showRankingBtn" disabled>Sorrend</button>
+                </div>
+            </div>
+
+            <!-- Ranking Table -->
+            <div id="rankingTableContainer" class="mt-4" style="display: none;">
+                <h3 id="rankingTableHeader">Rangsor</h3>
+                <table class="table table-striped table-bordered" id="rankingsTable">
+                    <thead>
+                        <tr>
+                            <th>Helyezés</th>
+                            <th>Mentor Neve</th>
+                            <th>Foglalkozás</th>
+                            <th>Esemény</th>
+                            <th>Műveletek</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Ranking rows will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
         </div>
         <div id="headTeachers" class="content-section" style="display: none;">
             <h1>Osztályfőnökök kezelése</h1>
@@ -412,8 +463,8 @@
     <script src="js/events.js"></script>
     <script src="js/occupations.js"></script>
     <script src="js/participants.js"></script>
-    <!--script src="js/rankings.js"></script>
-    <script src="js/headteachers.js"></script>
+    <script src="js/rankings.js"></script>
+    <!--script src="js/headteachers.js"></script>
     <script src="js/invitations.js"></script-->
 </body>
 

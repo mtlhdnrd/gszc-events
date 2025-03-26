@@ -614,7 +614,6 @@ $('#saveEditedParticipantBtn').click(function() {
     $('#addMentorOccupationBtn').on('click', function() {
         const mentorId = $('#mentorSelect').val();
         const occupationId = $('#occupationSelect').val();
-
         if (!mentorId || !occupationId) {
             alert("Kérlek válassz mentort és foglalkozást is!");
             return;
