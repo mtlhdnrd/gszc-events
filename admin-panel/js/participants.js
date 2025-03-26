@@ -91,10 +91,10 @@ class MentorTeacherContainer {
     }
     // No update method needed
 }
-
 // --- Global Instances ---
 const mentorStudentContainer = new MentorStudentContainer();
 const mentorTeacherContainer = new MentorTeacherContainer();
+
 let currentParticipantType = 'student'; // Keep track of current view
 
 // --- Utility Functions ---
@@ -123,6 +123,7 @@ function populateSchoolsDropdown(dropdownId, selectedSchoolId = null) {
         }
     });
 }
+
 function populateTeachersDropdown(dropdownId, schoolId, selectedTeacherId = null) {
      if (!schoolId) {
         $(`#${dropdownId}`).html('<option value="">Válassz osztályfőnököt</option>');
@@ -205,6 +206,7 @@ function loadParticipants(type) {
                 }
                 addParticipantRow(participant);
             });
+            $(document).trigger("participantsLoaded");
         },
         error: function(xhr, status, error) {
             console.error("Error loading participants:", status, error);
@@ -217,8 +219,13 @@ function loadParticipants(type) {
 $(document).ready(function() {
 
     // Initial load (default to students)
-    loadParticipants('student');
-
+    loadParticipants(currentParticipantType);
+    $(document).on('participantsLoaded', initMentorWorkshops);
+    $(document).on('participantAdded', loadMentorsIntoSelect);
+    $(document).on('workshopAdded', loadOccupationsIntoSelect);
+    $(document).on('participantDeleted', loadMentorsIntoSelect);
+    $(document).on('workshopDeleted', loadOccupationsIntoSelect);
+    $(document).on('workshopUpdated', loadOccupationsIntoSelect);
     // --- Button Clicks ---
     $('#showStudentsBtn').click(function() {
         currentParticipantType = 'student';
@@ -238,9 +245,17 @@ $(document).ready(function() {
 
     $('#addParticipantBtn').click(function() {
         if (currentParticipantType === 'student') {
+            // Clear input fields for the student modal
+            $('#addStudentModal').find('input').val('');  
+            $('#addStudentModal').find('select').val(''); 
+
             populateSchoolsDropdown('studentSchool');
             $('#addStudentModal').modal('show');
         } else {
+            // Clear input fields for the teacher modal
+            $('#addTeacherModal').find('input').val(''); 
+            $('#addTeacherModal').find('select').val('');
+
             populateSchoolsDropdown('teacherSchool');
             $('#addTeacherModal').modal('show');
         }
@@ -270,12 +285,11 @@ $(document).ready(function() {
         data: { username: newStudent.username, password: password },
         success: function(userResponse) {
             const userId = parseInt(userResponse.user_id);  //Get user id
-
             $.ajax({
                 url: '../backend/api/participants/add_participant.php',
                 type: 'POST',
                 dataType: 'json',
-                data: {  user_id: userId,...newStudent.toJson() },
+                data: {...newStudent.toJson(), user_id:userId},
                 success: function(response) {
                     newStudent.userId = userId; // Set the user ID from the response
                     mentorStudentContainer.addStudent(newStudent);
@@ -289,6 +303,7 @@ $(document).ready(function() {
                     $('#studentTeacher').val('');
                     $('#studentUsername').val('');
                     $('#studentPassword').val('');
+                    $(document).trigger("participantAdded", newStudent);
                 },
               error: function(xhr, status, error) {
                 console.error("Error adding participant:", status, error, xhr.responseText);
@@ -340,7 +355,7 @@ $(document).ready(function() {
                     $('#teacherSchool').val('');
                     $('#teacherUsername').val('');
                     $('#teacherPassword').val('');
-
+                    $(document).trigger("participantAdded", newTeacher);
                 },
                 error: function(xhr, status, error) {
                     console.error("Error adding participant:", status, error, xhr.responseText);
@@ -397,13 +412,13 @@ $('#saveEditedParticipantBtn').click(function() {
     const name = $('#editParticipantName').val().trim();
     const email = $('#editParticipantEmail').val().trim();
     const schoolId = $('#editParticipantSchool').val();
-    const teacherId = $('#editParticipantTeacher').val();  //Can be null.
+    const teacherId = $('#editParticipantTeacher').val(); // Can be null.
 
     if (!name || !email || !schoolId) {
         alert("Minden mező kitöltése kötelező!");
         return;
     }
-     //Get teacher id if student is edited
+    // Get teacher id if student is edited
     if (type === 'student' && !teacherId) {
         alert("Osztályfőnök kiválasztása kötelező!");
         return;
@@ -412,7 +427,7 @@ $('#saveEditedParticipantBtn').click(function() {
     let participant;
     if (type === 'student') {
         participant = mentorStudentContainer.getStudentById(userId);
-        if(!participant) {
+        if (!participant) {
             console.error("Student cannot be found");
             return;
         }
@@ -422,7 +437,7 @@ $('#saveEditedParticipantBtn').click(function() {
         participant.teacherId = parseInt(teacherId) || null;
     } else {
         participant = mentorTeacherContainer.getTeacherById(userId);
-         if(!participant) {
+        if (!participant) {
             console.error("Teacher cannot be found");
             return;
         }
@@ -433,39 +448,73 @@ $('#saveEditedParticipantBtn').click(function() {
 
     $.ajax({
         url: '../backend/api/participants/update_participant.php',
-        type: 'POST', // Use PUT for updates
+        type: 'POST', // Your existing code uses POST, adjust if needed
         dataType: 'json',
         data: participant.toJson(),
         success: function(response) {
-            // Update the table row
+            // --- START: Update Table Row ---
             const row = $(`#participantsTable tbody tr[data-user-id="${userId}"]`);
-            row.find('td:eq(1)').text(name); // Update name
-            row.find('td:eq(2)').text(email); // Update email
-             $.ajax({  //Update school name
+
+            // Update Name and Email (already correct)
+            row.find('td:eq(1)').text(name);
+            row.find('td:eq(2)').text(email);
+
+            // Update School Name (fetch it)
+            $.ajax({
                 url: `../backend/api/schools/get_schools.php?school_id=${participant.schoolId}`,
                 type: 'GET',
+                dataType: 'json', // Expect a single school object
                 success: function(schoolData) {
-                    row.find('td:eq(3)').text(schoolData.name);
-                     participant.schoolName = schoolData.name;
+                    if (schoolData && schoolData.name) {
+                        row.find('td:eq(3)').text(schoolData.name);
+                        participant.schoolName = schoolData.name; // Update local object
+                    } else {
+                        row.find('td:eq(3)').text('-'); // Fallback if name not found
+                        participant.schoolName = null;
+                    }
                 },
                 error: function(xhr, status, error) {
-                    console.error("Error getting school data:", status, error);
+                    console.error("Error getting school data for update:", status, error);
+                    row.find('td:eq(3)').text('-'); // Fallback on error
+                    participant.schoolName = null;
                 }
             });
-            if (type === 'student') {  // Update teacher name
-                $.ajax({
-                    url: `../backend/api/teachers/get_teachers.php?teacher_id=${participant.teacherId}`,
-                    type: 'GET',
-                    success: function(teacherData) {
-                        row.find('td:eq(4)').text(teacherData.name);
-                        participant.teacherName = teacherData.name;
-                    },
-                    error: function(xhr, status, error) {
-                        console.error("Error getting teacher data:", status, error);
-                    }
-                });
+
+            // Update Teacher Name (fetch it, only for students)
+            if (type === 'student') {
+                if (participant.teacherId) { // Check if there's a teacher ID
+                    $.ajax({
+                        url: `../backend/api/teachers/get_teachers.php?teacher_id=${participant.teacherId}`,
+                        type: 'GET',
+                        dataType: 'json', // Expect a single teacher object
+                        success: function(teacherData) {
+                            if (teacherData && teacherData.name) {
+                                row.find('td:eq(4)').text(teacherData.name);
+                                participant.teacherName = teacherData.name; // Update local object
+                            } else {
+                                row.find('td:eq(4)').text('-'); // Fallback if name not found
+                                participant.teacherName = null;
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error("Error getting teacher data for update:", status, error);
+                            row.find('td:eq(4)').text('-'); // Fallback on error
+                            participant.teacherName = null;
+                        }
+                    });
+                } else {
+                    // No teacher assigned
+                    row.find('td:eq(4)').text('-');
+                    participant.teacherName = null;
+                }
+            } else {
+                // For teachers, the teacher column should be empty/placeholder
+                row.find('td:eq(4)').text('-');
             }
+            // --- END: Update Table Row ---
+
             $('#editParticipantModal').modal('hide');
+            loadMentorsIntoSelect(); // Refresh the mentor dropdown
         },
         error: function(xhr, status, error) {
             console.error("Error updating participant:", status, error, xhr.responseText);
@@ -495,6 +544,7 @@ $('#saveEditedParticipantBtn').click(function() {
                                 mentorTeacherContainer.removeTeacherById(userId);
                              }
                             row.remove();
+                            $(document).trigger('participantDeleted');
                         },
                         error: function(xhr, status, error) {
                             console.error("Error deleting user:", status, error, xhr.responseText);
@@ -522,4 +572,97 @@ $('#saveEditedParticipantBtn').click(function() {
             populateTeachersDropdown('editParticipantTeacher', schoolId);
         }
     });
+    function loadMentorsIntoSelect() {
+        let mentors;
+        if (currentParticipantType == 'student') {
+            mentors = mentorStudentContainer.getAllStudents();
+        } else {
+            mentors = mentorTeacherContainer.getAllTeachers();
+        }
+        const $mentorSelect = $('#mentorSelect');
+        $mentorSelect.empty().append('<option value="">Válassz mentort</option>'); // Clear and add default
+        mentors.forEach(mentor => {
+            $mentorSelect.append(`<option value="${mentor.userId}">${mentor.name}</option>`);
+        });
+    }
+    function loadOccupationsIntoSelect() {
+        $.ajax({
+            url: '../backend/api/workshops/get_workshops.php',
+            type: 'GET',
+            dataType: 'json',
+            success: function(workshops) {
+                occupationContainer.occupations = []; //Clear local data
+                const $occupationSelect = $('#occupationSelect'); // Use jQuery object
+                $occupationSelect.empty().append('<option value="">Válassz foglalkozást</option>');
+
+                workshops.forEach(workshop => {
+                    // Add to your occupationContainer
+                   const occupation = new Occupation(workshop.workshop_id, workshop.name);
+                   occupationContainer.addOccupation(occupation);
+
+                    // Add to the dropdown
+                    $occupationSelect.append(`<option value="${workshop.workshop_id}">${workshop.name}</option>`);
+                });
+            },
+            error: function(xhr, status, error) {
+                console.error("Error loading occupations:", status, error);
+                alert("Hiba történt a foglalkozások betöltésekor.");
+            }
+        });
+    }
+
+    $('#addMentorOccupationBtn').on('click', function() {
+        const mentorId = $('#mentorSelect').val();
+        const occupationId = $('#occupationSelect').val();
+
+        if (!mentorId || !occupationId) {
+            alert("Kérlek válassz mentort és foglalkozást is!");
+            return;
+        }
+        const mentorWorkshopData = {
+            user_id: parseInt(mentorId),
+            workshop_id: parseInt(occupationId),
+            ranking_number: 1
+        };
+        $.ajax({
+            url: '../backend/api/mentor_workshops/add_mentor_workshop.php',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(mentorWorkshopData),
+            success: function(response) {
+                // Adding mentor to rankings
+                $.ajax({
+                    url: '../backend/api/rankings/add_mentor_to_rankings.php', 
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ // Send necessary data
+                        user_id: parseInt(mentorId),
+                        workshop_id: parseInt(occupationId)
+                    }),
+                    success: function(response2) {
+                        console.log('Mentor added to rankings successfully:', response2);
+                        console.log('Mentor-Occupation assignment successful:', response);
+                        alert('Sikeres hozzárendelés!');
+                    },
+                    error: function(xhr2, status2, error2) {
+                        console.error('Failed to add mentor to rankings:', error2, xhr2.responseText);
+                        // Alert user about partial success
+                        alert('Hiba történt a mentor rangsorokhoz adása közben. A mentor-foglalkozás hozzárendelés sikeres lehetett.');
+                    }
+                });
+
+                $('#mentorSelect').val('');
+                $('#occupationSelect').val('');
+            },
+            error: function(xhr, status, error) {
+                console.error('Mentor-Occupation assignment failed:', error, xhr.responseText);
+                alert('Hiba a hozzárendelés során! Részletek a konzolban.');
+            }
+        });
+    });
+    function initMentorWorkshops()
+    {
+        loadOccupationsIntoSelect();
+        loadMentorsIntoSelect();
+    }
 });

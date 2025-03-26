@@ -153,7 +153,7 @@
             </div>
         </div>
 
-        <div id="participants" class="content-section" style="display:none;">
+        <div id="participants" class="content-section" style="display: none;">
             <h1>Résztvevők Kezelése</h1>
 
             <div class="btn-group mb-3" role="group">
@@ -180,7 +180,8 @@
             </table>
 
             <!-- Add Student Modal -->
-            <div class="modal fade" id="addStudentModal" tabindex="-1" role="dialog" aria-labelledby="addStudentModalLabel" aria-hidden="true">
+            <div class="modal fade" id="addStudentModal" tabindex="-1" role="dialog"
+                aria-labelledby="addStudentModalLabel" aria-hidden="true">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -231,7 +232,8 @@
             </div>
 
             <!-- Add Teacher Modal -->
-            <div class="modal fade" id="addTeacherModal" tabindex="-1" role="dialog" aria-labelledby="addTeacherModalLabel" aria-hidden="true">
+            <div class="modal fade" id="addTeacherModal" tabindex="-1" role="dialog"
+                aria-labelledby="addTeacherModalLabel" aria-hidden="true">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -274,7 +276,8 @@
             </div>
 
             <!-- Edit Participant Modal (Shared) -->
-            <div class="modal fade" id="editParticipantModal" tabindex="-1" role="dialog" aria-labelledby="editParticipantModalLabel" aria-hidden="true">
+            <div class="modal fade" id="editParticipantModal" tabindex="-1" role="dialog"
+                aria-labelledby="editParticipantModalLabel" aria-hidden="true">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -314,63 +317,25 @@
                     </div>
                 </div>
             </div>
+            <h2>Mentordiák/Mentortanár hozzárendelése foglalkozáshoz</h2>
+            <div class="form-group">
+                <label for="mentorSelect">Válassz Mentort:</label>
+                <select class="form-control" id="mentorSelect">
+                    <option value="">Válassz mentort</option>
+                    <!-- Mentors (students/teachers) will be loaded here -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="occupationSelect">Válassz Foglalkozást:</label>
+                <select class="form-control" id="occupationSelect">
+                    <option value="">Válassz foglalkozást</option>
+                    <!-- Occupations will be loaded here -->
+                </select>
+            </div>
+            <button type="button" class="btn btn-info" id="addMentorOccupationBtn">Hozzárendelés</button>
         </div>
         <div id="rankings" class="content-section" style="display: none;">
             <h1>Rangsorok kezelése</h1>
-
-            <h2>Rangsor Megjelenítése</h2>
-            <div class="form-group">
-                <label for="eventSelectRanking">Esemény:</label>
-                <select class="form-control" id="eventSelectRanking">
-                    <option value="">Válassz eseményt</option>
-                    <!-- Events will be loaded here -->
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="occupationSelectRanking">Foglalkozás:</label>
-                <select class="form-control" id="occupationSelectRanking">
-                    <option value="">Válassz foglalkozást</option>
-                    <!-- Occupations for the selected event will be loaded here -->
-                </select>
-            </div>
-            <button id="showRankingsBtn" class="btn btn-primary">Rangsor Megjelenítése</button>
-
-            <table class="table table-striped table-bordered" id="rankingsTable">
-                <thead>
-                    <tr>
-                        <th>Diák Felhasználónév</th>
-                        <th>Sorszám</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Rankings will be displayed here -->
-                </tbody>
-            </table>
-
-            <h2>Rangsor Hozzáadása</h2>
-            <div class="form-group">
-                <label for="addEventSelectRanking">Esemény:</label>
-                <select class="form-control" id="addEventSelectRanking">
-                    <option value="">Válassz eseményt</option>
-                    <!-- Events will be loaded here -->
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="addOccupationSelectRanking">Foglalkozás:</label>
-                <select class="form-control" id="addOccupationSelectRanking">
-                    <option value="">Válassz foglalkozást</option>
-                    <!-- Occupations for the selected event will be loaded here -->
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="studentUsernameRanking">Diák Felhasználónév:</label>
-                <input type="text" class="form-control" id="studentUsernameRanking">
-            </div>
-            <div class="form-group">
-                <label for="rankingNumber">Sorszám:</label>
-                <input type="number" class="form-control" id="rankingNumber" min="1">
-            </div>
-            <button id="addRankingBtn" class="btn btn-primary">Felvitel</button>
         </div>
         <div id="headTeachers" class="content-section" style="display: none;">
             <h1>Osztályfőnökök kezelése</h1>

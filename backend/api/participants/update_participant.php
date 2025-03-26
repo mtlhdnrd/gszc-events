@@ -40,7 +40,6 @@ if (validate_request("POST", $expected_fields)) {
     $user_check_stmt->bind_param("i", $user_id);
     $user_check_stmt->execute();
     $user_check_result = $user_check_stmt->get_result();
-
     if ($user_check_result->num_rows === 0) {
         http_response_code(404); // Not Found
         echo json_encode(array("message" => "User with the provided user_id does not exist."));
@@ -86,19 +85,35 @@ if (validate_request("POST", $expected_fields)) {
          $teacher_check_stmt->close();
     }
 
-    //TODO: különválasztani type szerint, ha tanár, hagyja null-on a teacher_id-t
     // --- Update Database ---
-    $query = "UPDATE participants SET name = ?, email = ?, type = ?, school_id = ?, teacher_id = ? WHERE user_id = ?";
-    $stmt = $conn->prepare($query);
 
-    if (!$stmt) {
-        http_response_code(500);
-        echo json_encode(array("message" => "Prepare failed: " . $conn->error));
-        exit();
+    //FIXME: Update for teacher is not working
+    $query = "";
+    if($type=='student')
+    {
+        $query = "UPDATE participants SET name = ?, email = ?, school_id = ?, teacher_id = ? WHERE user_id = ?";
+        $stmt = $conn->prepare($query);
+    
+        if (!$stmt) {
+            http_response_code(500);
+            echo json_encode(array("message" => "Prepare failed: " . $conn->error));
+            exit();
+        }
+    
+        $stmt->bind_param("ssiii", $name, $email, $school_id, $teacher_id, $user_id);
+    }else{
+        $query = "UPDATE participants SET name = ?, email = ?, school_id = ? WHERE user_id = ?";
+        $stmt = $conn->prepare($query);
+    
+        if (!$stmt) {
+            http_response_code(500);
+            echo json_encode(array("message" => "Prepare failed: " . $conn->error));
+            exit();
+        }
+    
+        $stmt->bind_param("ssii", $name, $email, $school_id, $user_id);
+
     }
-
-    $stmt->bind_param("sssiii", $name, $email, $type, $school_id, $teacher_id, $user_id); // Correct order!
-
     if ($stmt->execute()) {
         if ($stmt->affected_rows > 0) {
             // Rows were updated

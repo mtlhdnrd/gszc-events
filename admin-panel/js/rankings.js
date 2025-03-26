@@ -22,11 +22,11 @@ class RankingContainer {
         this.rankings.push(ranking);
     }
 
-    getRankingsByEventOccupation(eventOccupationId) { // Changed to use eventOccupationId
+    getRankingsByEventOccupation(eventOccupationId) {
         return this.rankings.filter(ranking => ranking.eventOccupationId === eventOccupationId);
     }
 
-    removeRanking(rankingId) { // Changed to use rankingId
+    removeRanking(rankingId) {
         const initialLength = this.rankings.length;
         this.rankings = this.rankings.filter(ranking => ranking.rankingId !== rankingId);
         return this.rankings.length < initialLength;

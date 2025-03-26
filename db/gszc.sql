@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 24, 2025 at 08:01 PM
+-- Generation Time: Mar 25, 2025 at 04:12 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -65,8 +65,8 @@ CREATE TABLE `events` (
 --
 
 INSERT INTO `events` (`event_id`, `name`, `date`, `location`, `status`) VALUES
-(6, 'Hygger', '2025-03-27', 'home', 'failed'),
-(8, 'fsdfsdfsdf', '2025-03-19', 'fdsfsd', 'ready');
+(9, 'Hackathon', '2025-03-26', 'home', 'pending'),
+(10, 'Tavaszi játszma', '2025-03-28', 'home', 'pending');
 
 -- --------------------------------------------------------
 
@@ -89,10 +89,8 @@ CREATE TABLE `event_workshop` (
 --
 
 INSERT INTO `event_workshop` (`event_workshop_id`, `event_id`, `workshop_id`, `max_workable_hours`, `number_of_mentors_required`, `number_of_teachers_required`, `busyness`) VALUES
-(10, 6, 6, 3, 3, 1, 'high'),
-(14, 8, 4, 5, 3, 1, 'high'),
-(15, 8, 5, 5, 3, 1, 'high'),
-(16, 8, 6, 5, 3, 1, 'high');
+(28, 9, 7, 3, 3, 1, 'high'),
+(29, 9, 9, 3, 3, 1, 'high');
 
 -- --------------------------------------------------------
 
@@ -106,6 +104,13 @@ CREATE TABLE `mentor_workshop` (
   `workshop_id` int(11) NOT NULL,
   `ranking_number` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `mentor_workshop`
+--
+
+INSERT INTO `mentor_workshop` (`mentor_workshop_id`, `user_id`, `workshop_id`, `ranking_number`) VALUES
+(1, 21, 8, 1);
 
 -- --------------------------------------------------------
 
@@ -129,7 +134,8 @@ CREATE TABLE `participants` (
 --
 
 INSERT INTO `participants` (`user_id`, `name`, `email`, `type`, `teacher_id`, `school_id`, `total_hours_worked`, `events_elapsed`) VALUES
-(13, 'Gizmó', 'gizmo@gmail.com', 'teacher', NULL, 1, 0, 0);
+(21, 'Bartos Ferenc', 'ferencdiak@gmail.com', 'student', 1, 1, 0, 0),
+(22, 'Kovács lajos 33', 'same', 'teacher', NULL, 1, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -215,11 +221,8 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`user_id`, `username`, `password`) VALUES
-(8, 'fsdfdsfs', '$2y$10$E.QzrEsvd4WZR1z4Y/oeMO4ksgWZsWqEf2kf/2dh9.NagKWlne6Em'),
-(9, 'gizmo', '$2y$10$dJnCofk1XDxG8FkoWwa7xOj8sc9tp2Mq8/H5zpvsfHm3HXCfe/tJm'),
-(10, 'fsdfsdfsdfsd', '$2y$10$d0cyuAmYmuNTTfbXImZ91utRUUi1l5uKRqpv7aZhZAlBWcKULkYBa'),
-(11, 'fsdfsd', '$2y$10$Hl.OUQH/AEyiE/nnRLEAK.DdhrsnYBKO2k2ijJJtQl95W3chLoAUy'),
-(13, 'gizmoszorosteste', '$2y$10$JzggukA.HjfSRjoPb9yyY.SXoRqlY8xCI4jpZmULRAz7sJUwpGjL.');
+(21, 'dsfdsjflkdsjfds', '$2y$10$h/5Fp1ORAYjy7Lsk1xQLFuhfi5MBQfN1I58PWfG3V9rOuSONOFNHm'),
+(22, 'lacika', '$2y$10$4XYlBntJgdkaFijZmwLLj.na5o530iJXrY.u.KU3iXaLj3V4cbLrK');
 
 -- --------------------------------------------------------
 
@@ -238,9 +241,9 @@ CREATE TABLE `workshops` (
 --
 
 INSERT INTO `workshops` (`workshop_id`, `name`, `description`) VALUES
-(4, 'Kyra simogatás', 'Iskolai foglalkozás'),
-(5, 'Chug simogatás', 'Iskolai foglalkozás'),
-(6, 'Gizmo simogatás', 'Iskolai foglalkozás');
+(7, 'Robotprogramozás', 'Iskolai foglalkozás'),
+(8, 'Lego építés verseny', 'Iskolai foglalkozás'),
+(9, 'CNC Heggesztés', 'Iskolai foglalkozás');
 
 -- --------------------------------------------------------
 
@@ -368,19 +371,19 @@ ALTER TABLE `attendance_sheets`
 -- AUTO_INCREMENT for table `events`
 --
 ALTER TABLE `events`
-  MODIFY `event_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `event_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `event_workshop`
 --
 ALTER TABLE `event_workshop`
-  MODIFY `event_workshop_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `event_workshop_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT for table `mentor_workshop`
 --
 ALTER TABLE `mentor_workshop`
-  MODIFY `mentor_workshop_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `mentor_workshop_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `participant_invitations`
@@ -410,13 +413,13 @@ ALTER TABLE `teachers`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `workshops`
 --
 ALTER TABLE `workshops`
-  MODIFY `workshop_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `workshop_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `workshop_ranking`
@@ -462,7 +465,7 @@ ALTER TABLE `mentor_workshop`
 ALTER TABLE `participants`
   ADD CONSTRAINT `participants_ibfk_1` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`teacher_id`) ON DELETE SET NULL,
   ADD CONSTRAINT `participants_ibfk_2` FOREIGN KEY (`school_id`) REFERENCES `schools` (`school_id`),
-  ADD CONSTRAINT `participants_ibfk_3` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
+  ADD CONSTRAINT `participants_ibfk_3` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `participant_invitations`
