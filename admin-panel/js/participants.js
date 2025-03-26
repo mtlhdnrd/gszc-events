@@ -619,19 +619,38 @@ $('#saveEditedParticipantBtn').click(function() {
             alert("Kérlek válassz mentort és foglalkozást is!");
             return;
         }
+        const mentorWorkshopData = {
+            user_id: parseInt(mentorId),
+            workshop_id: parseInt(occupationId),
+            ranking_number: 1
+        };
         $.ajax({
             url: '../backend/api/mentor_workshops/add_mentor_workshop.php',
             method: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({
-                user_id: parseInt(mentorId), // Ensure they are integers
-                workshop_id: parseInt(occupationId),
-                ranking_number: 1
-            }),
+            data: JSON.stringify(mentorWorkshopData),
             success: function(response) {
-                console.log('Mentor-Occupation assignment successful:', response);
-                alert('Sikeres hozzárendelés!');
-                // Consider clearing the dropdowns after success:
+                // Adding mentor to rankings
+                $.ajax({
+                    url: '../backend/api/rankings/add_mentor_to_rankings.php', 
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ // Send necessary data
+                        user_id: parseInt(mentorId),
+                        workshop_id: parseInt(occupationId)
+                    }),
+                    success: function(response2) {
+                        console.log('Mentor added to rankings successfully:', response2);
+                        console.log('Mentor-Occupation assignment successful:', response);
+                        alert('Sikeres hozzárendelés!');
+                    },
+                    error: function(xhr2, status2, error2) {
+                        console.error('Failed to add mentor to rankings:', error2, xhr2.responseText);
+                        // Alert user about partial success
+                        alert('Hiba történt a mentor rangsorokhoz adása közben. A mentor-foglalkozás hozzárendelés sikeres lehetett.');
+                    }
+                });
+
                 $('#mentorSelect').val('');
                 $('#occupationSelect').val('');
             },

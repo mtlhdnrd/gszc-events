@@ -336,60 +336,6 @@
         </div>
         <div id="rankings" class="content-section" style="display: none;">
             <h1>Rangsorok kezelése</h1>
-
-            <h2>Rangsor Megjelenítése</h2>
-            <div class="form-group">
-                <label for="eventSelectRanking">Esemény:</label>
-                <select class="form-control" id="eventSelectRanking">
-                    <option value="">Válassz eseményt</option>
-                    <!-- Events will be loaded here -->
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="occupationSelectRanking">Foglalkozás:</label>
-                <select class="form-control" id="occupationSelectRanking">
-                    <option value="">Válassz foglalkozást</option>
-                    <!-- Occupations for the selected event will be loaded here -->
-                </select>
-            </div>
-            <button id="showRankingsBtn" class="btn btn-primary">Rangsor Megjelenítése</button>
-
-            <table class="table table-striped table-bordered" id="rankingsTable">
-                <thead>
-                    <tr>
-                        <th>Diák Felhasználónév</th>
-                        <th>Sorszám</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Rankings will be displayed here -->
-                </tbody>
-            </table>
-
-            <h2>Rangsor Hozzáadása</h2>
-            <div class="form-group">
-                <label for="addEventSelectRanking">Esemény:</label>
-                <select class="form-control" id="addEventSelectRanking">
-                    <option value="">Válassz eseményt</option>
-                    <!-- Events will be loaded here -->
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="addOccupationSelectRanking">Foglalkozás:</label>
-                <select class="form-control" id="addOccupationSelectRanking">
-                    <option value="">Válassz foglalkozást</option>
-                    <!-- Occupations for the selected event will be loaded here -->
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="studentUsernameRanking">Diák Felhasználónév:</label>
-                <input type="text" class="form-control" id="studentUsernameRanking">
-            </div>
-            <div class="form-group">
-                <label for="rankingNumber">Sorszám:</label>
-                <input type="number" class="form-control" id="rankingNumber" min="1">
-            </div>
-            <button id="addRankingBtn" class="btn btn-primary">Felvitel</button>
         </div>
         <div id="headTeachers" class="content-section" style="display: none;">
             <h1>Osztályfőnökök kezelése</h1>
