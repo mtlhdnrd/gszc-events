@@ -40,7 +40,6 @@ if (validate_request("POST", $expected_fields)) {
     $user_check_stmt->bind_param("i", $user_id);
     $user_check_stmt->execute();
     $user_check_result = $user_check_stmt->get_result();
-
     if ($user_check_result->num_rows === 0) {
         http_response_code(404); // Not Found
         echo json_encode(array("message" => "User with the provided user_id does not exist."));
@@ -112,8 +111,7 @@ if (validate_request("POST", $expected_fields)) {
             exit();
         }
     
-        $stmt->bind_param("ssii", $name, $email, $school_id, $ $user_id);
-        echo "Query: ".$query."|".$name.$email.$school_id.$user_id;
+        $stmt->bind_param("ssii", $name, $email, $school_id, $user_id);
 
     }
     if ($stmt->execute()) {
