@@ -121,6 +121,9 @@ $(document).ready(function() {
     $('#eventSelect').on('change', handleEventSelectionChange);
     $('#saveOccupationsBtn').on('click', saveOccupations);
     $(document).on('eventAdded', loadEventsIntoSelect);
+    $(document).on('workshopAdded', loadOccupations);
+    $(document).on('workshopDeleted', loadOccupations);
+    $(document).on('workshopUpdated', loadOccupations);
 
       $('#occupationsTable tbody').on('click', '.edit-button', handleEditOccupationClick);
     $('#occupationsTable tbody').on('click', '.cancel-button', handleCancelOccupationClick);
@@ -343,7 +346,8 @@ $(document).ready(function() {
             data: newOccupation.toJson(),
             success: function (data) {
                 occupationContainer.addOccupation(newOccupation);
-                loadOccupations();
+                
+                $(document).trigger('workshopAdded', newOccupation);
             },
             error: function (xhr, status, error) {
                 console.error("Hiba a foglalkozás frissítése közben:", xhr, status, error);
@@ -392,7 +396,7 @@ $(document).ready(function() {
                     row.find('input.occupation-data').attr('readonly', true);
                     row.find('.edit-button').text('Szerkesztés');
                     row.find('.cancel-button').remove();
-                    loadOccupations();
+                    $(document).trigger('workshopUpdated');
                 },
                 error: function (xhr, status, error) {
                     console.error("Hiba a foglalkozás frissítése közben:", xhr, status, error);
@@ -440,7 +444,8 @@ $(document).ready(function() {
                 success: function (response) {
                     if (occupationContainer.removeOccupationById(occupationId)) {
                         row.remove();
-                        loadOccupations();
+                        $(document).trigger('workshopDeleted');
+
                     } else {
                         console.error("Occupation with ID " + occupationId + " not found locally.");
                         alert("Foglalkozás nem található.");

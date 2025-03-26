@@ -221,7 +221,11 @@ $(document).ready(function() {
     // Initial load (default to students)
     loadParticipants(currentParticipantType);
     $(document).on('participantsLoaded', initMentorWorkshops);
-
+    $(document).on('participantAdded', loadMentorsIntoSelect);
+    $(document).on('workshopAdded', loadOccupationsIntoSelect);
+    $(document).on('participantDeleted', loadMentorsIntoSelect);
+    $(document).on('workshopDeleted', loadOccupationsIntoSelect);
+    $(document).on('workshopUpdated', loadOccupationsIntoSelect);
     // --- Button Clicks ---
     $('#showStudentsBtn').click(function() {
         currentParticipantType = 'student';
@@ -299,6 +303,7 @@ $(document).ready(function() {
                     $('#studentTeacher').val('');
                     $('#studentUsername').val('');
                     $('#studentPassword').val('');
+                    $(document).trigger("participantAdded", newStudent);
                 },
               error: function(xhr, status, error) {
                 console.error("Error adding participant:", status, error, xhr.responseText);
@@ -350,7 +355,7 @@ $(document).ready(function() {
                     $('#teacherSchool').val('');
                     $('#teacherUsername').val('');
                     $('#teacherPassword').val('');
-
+                    $(document).trigger("participantAdded", newTeacher);
                 },
                 error: function(xhr, status, error) {
                     console.error("Error adding participant:", status, error, xhr.responseText);
@@ -407,13 +412,13 @@ $('#saveEditedParticipantBtn').click(function() {
     const name = $('#editParticipantName').val().trim();
     const email = $('#editParticipantEmail').val().trim();
     const schoolId = $('#editParticipantSchool').val();
-    const teacherId = $('#editParticipantTeacher').val();  //Can be null.
+    const teacherId = $('#editParticipantTeacher').val(); // Can be null.
 
     if (!name || !email || !schoolId) {
         alert("Minden mező kitöltése kötelező!");
         return;
     }
-     //Get teacher id if student is edited
+    // Get teacher id if student is edited
     if (type === 'student' && !teacherId) {
         alert("Osztályfőnök kiválasztása kötelező!");
         return;
@@ -422,7 +427,7 @@ $('#saveEditedParticipantBtn').click(function() {
     let participant;
     if (type === 'student') {
         participant = mentorStudentContainer.getStudentById(userId);
-        if(!participant) {
+        if (!participant) {
             console.error("Student cannot be found");
             return;
         }
@@ -432,7 +437,7 @@ $('#saveEditedParticipantBtn').click(function() {
         participant.teacherId = parseInt(teacherId) || null;
     } else {
         participant = mentorTeacherContainer.getTeacherById(userId);
-         if(!participant) {
+        if (!participant) {
             console.error("Teacher cannot be found");
             return;
         }
@@ -443,39 +448,73 @@ $('#saveEditedParticipantBtn').click(function() {
 
     $.ajax({
         url: '../backend/api/participants/update_participant.php',
-        type: 'POST', // Use PUT for updates
+        type: 'POST', // Your existing code uses POST, adjust if needed
         dataType: 'json',
         data: participant.toJson(),
         success: function(response) {
-            // Update the table row
+            // --- START: Update Table Row ---
             const row = $(`#participantsTable tbody tr[data-user-id="${userId}"]`);
-            row.find('td:eq(1)').text(name); // Update name
-            row.find('td:eq(2)').text(email); // Update email
-             $.ajax({  //Update school name
+
+            // Update Name and Email (already correct)
+            row.find('td:eq(1)').text(name);
+            row.find('td:eq(2)').text(email);
+
+            // Update School Name (fetch it)
+            $.ajax({
                 url: `../backend/api/schools/get_schools.php?school_id=${participant.schoolId}`,
                 type: 'GET',
+                dataType: 'json', // Expect a single school object
                 success: function(schoolData) {
-                    row.find('td:eq(3)').text(schoolData.name);
-                     participant.schoolName = schoolData.name;
+                    if (schoolData && schoolData.name) {
+                        row.find('td:eq(3)').text(schoolData.name);
+                        participant.schoolName = schoolData.name; // Update local object
+                    } else {
+                        row.find('td:eq(3)').text('-'); // Fallback if name not found
+                        participant.schoolName = null;
+                    }
                 },
                 error: function(xhr, status, error) {
-                    console.error("Error getting school data:", status, error);
+                    console.error("Error getting school data for update:", status, error);
+                    row.find('td:eq(3)').text('-'); // Fallback on error
+                    participant.schoolName = null;
                 }
             });
-            if (type === 'student') {  // Update teacher name
-                $.ajax({
-                    url: `../backend/api/teachers/get_teachers.php?teacher_id=${participant.teacherId}`,
-                    type: 'GET',
-                    success: function(teacherData) {
-                        row.find('td:eq(4)').text(teacherData.name);
-                        participant.teacherName = teacherData.name;
-                    },
-                    error: function(xhr, status, error) {
-                        console.error("Error getting teacher data:", status, error);
-                    }
-                });
+
+            // Update Teacher Name (fetch it, only for students)
+            if (type === 'student') {
+                if (participant.teacherId) { // Check if there's a teacher ID
+                    $.ajax({
+                        url: `../backend/api/teachers/get_teachers.php?teacher_id=${participant.teacherId}`,
+                        type: 'GET',
+                        dataType: 'json', // Expect a single teacher object
+                        success: function(teacherData) {
+                            if (teacherData && teacherData.name) {
+                                row.find('td:eq(4)').text(teacherData.name);
+                                participant.teacherName = teacherData.name; // Update local object
+                            } else {
+                                row.find('td:eq(4)').text('-'); // Fallback if name not found
+                                participant.teacherName = null;
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error("Error getting teacher data for update:", status, error);
+                            row.find('td:eq(4)').text('-'); // Fallback on error
+                            participant.teacherName = null;
+                        }
+                    });
+                } else {
+                    // No teacher assigned
+                    row.find('td:eq(4)').text('-');
+                    participant.teacherName = null;
+                }
+            } else {
+                // For teachers, the teacher column should be empty/placeholder
+                row.find('td:eq(4)').text('-');
             }
+            // --- END: Update Table Row ---
+
             $('#editParticipantModal').modal('hide');
+            loadMentorsIntoSelect(); // Refresh the mentor dropdown
         },
         error: function(xhr, status, error) {
             console.error("Error updating participant:", status, error, xhr.responseText);
@@ -505,6 +544,7 @@ $('#saveEditedParticipantBtn').click(function() {
                                 mentorTeacherContainer.removeTeacherById(userId);
                              }
                             row.remove();
+                            $(document).trigger('participantDeleted');
                         },
                         error: function(xhr, status, error) {
                             console.error("Error deleting user:", status, error, xhr.responseText);
