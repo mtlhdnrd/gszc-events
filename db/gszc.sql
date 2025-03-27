@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 25, 2025 at 04:12 PM
+-- Generation Time: Mar 26, 2025 at 10:55 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -66,7 +66,8 @@ CREATE TABLE `events` (
 
 INSERT INTO `events` (`event_id`, `name`, `date`, `location`, `status`) VALUES
 (9, 'Hackathon', '2025-03-26', 'home', 'pending'),
-(10, 'Tavaszi játszma', '2025-03-28', 'home', 'pending');
+(10, 'Tavaszi játszma', '2025-03-28', 'home', 'pending'),
+(11, 'Esemény3', '2025-03-28', 'iskola', 'pending');
 
 -- --------------------------------------------------------
 
@@ -89,8 +90,13 @@ CREATE TABLE `event_workshop` (
 --
 
 INSERT INTO `event_workshop` (`event_workshop_id`, `event_id`, `workshop_id`, `max_workable_hours`, `number_of_mentors_required`, `number_of_teachers_required`, `busyness`) VALUES
-(28, 9, 7, 3, 3, 1, 'high'),
-(29, 9, 9, 3, 3, 1, 'high');
+(41, 10, 7, 3, 3, 1, 'high'),
+(42, 10, 8, 3, 3, 1, 'high'),
+(43, 11, 7, 5, 3, 1, 'high'),
+(44, 11, 8, 5, 3, 1, 'high'),
+(45, 9, 7, 3, 3, 1, 'high'),
+(46, 9, 8, 3, 3, 1, 'high'),
+(47, 9, 9, 3, 3, 1, 'high');
 
 -- --------------------------------------------------------
 
@@ -110,7 +116,8 @@ CREATE TABLE `mentor_workshop` (
 --
 
 INSERT INTO `mentor_workshop` (`mentor_workshop_id`, `user_id`, `workshop_id`, `ranking_number`) VALUES
-(1, 21, 8, 1);
+(7, 21, 7, 1),
+(8, 25, 7, 1);
 
 -- --------------------------------------------------------
 
@@ -135,7 +142,9 @@ CREATE TABLE `participants` (
 
 INSERT INTO `participants` (`user_id`, `name`, `email`, `type`, `teacher_id`, `school_id`, `total_hours_worked`, `events_elapsed`) VALUES
 (21, 'Bartos Ferenc', 'ferencdiak@gmail.com', 'student', 1, 1, 0, 0),
-(22, 'Kovács lajos 33', 'same', 'teacher', NULL, 1, 0, 0);
+(22, 'Kovács lajos', 'lajos@gmail.com', 'teacher', NULL, 1, 0, 0),
+(24, 'Kis János', 'kisjanos@gmail.com', 'student', 1, 1, 0, 0),
+(25, 'Ferenc Alajos', 'feri@gmail.com', 'teacher', NULL, 1, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -161,8 +170,19 @@ CREATE TABLE `rankings` (
   `ranking_id` int(11) NOT NULL,
   `event_workshop_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
-  `ranking_number` int(11) NOT NULL
+  `ranking_number` int(11) NOT NULL,
+  `user_type` enum('student','teacher') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `rankings`
+--
+
+INSERT INTO `rankings` (`ranking_id`, `event_workshop_id`, `user_id`, `ranking_number`, `user_type`) VALUES
+(8, 41, 21, 1, 'student'),
+(9, 43, 21, 1, 'student'),
+(11, 41, 25, 1, 'teacher'),
+(12, 43, 25, 1, 'teacher');
 
 -- --------------------------------------------------------
 
@@ -222,7 +242,10 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`user_id`, `username`, `password`) VALUES
 (21, 'dsfdsjflkdsjfds', '$2y$10$h/5Fp1ORAYjy7Lsk1xQLFuhfi5MBQfN1I58PWfG3V9rOuSONOFNHm'),
-(22, 'lacika', '$2y$10$4XYlBntJgdkaFijZmwLLj.na5o530iJXrY.u.KU3iXaLj3V4cbLrK');
+(22, 'lacika', '$2y$10$4XYlBntJgdkaFijZmwLLj.na5o530iJXrY.u.KU3iXaLj3V4cbLrK'),
+(24, 'kisjanos', '$2y$10$bAWsKbkuEp1WmYT22EgUleL3B/5tArX9XewXF0hdMqK.huIY5EsmK'),
+(25, 'feriferi', '$2y$10$6iHRdPQGIy3k4c/LfQhQYevxZkhNDmpvNhJjhR.StlhpxUH5NqigO'),
+(27, 'fdsfdsfd', '$2y$10$WU7Np5neXKHXK0ej3rmKe.IgY5SUze0xymrO4qaB5oEeNvM4jj7DS');
 
 -- --------------------------------------------------------
 
@@ -243,7 +266,8 @@ CREATE TABLE `workshops` (
 INSERT INTO `workshops` (`workshop_id`, `name`, `description`) VALUES
 (7, 'Robotprogramozás', 'Iskolai foglalkozás'),
 (8, 'Lego építés verseny', 'Iskolai foglalkozás'),
-(9, 'CNC Heggesztés', 'Iskolai foglalkozás');
+(9, 'CNC Heggesztés', 'Iskolai foglalkozás'),
+(11, 'Horgolás', 'Iskolai foglakozás');
 
 -- --------------------------------------------------------
 
@@ -371,19 +395,19 @@ ALTER TABLE `attendance_sheets`
 -- AUTO_INCREMENT for table `events`
 --
 ALTER TABLE `events`
-  MODIFY `event_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `event_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `event_workshop`
 --
 ALTER TABLE `event_workshop`
-  MODIFY `event_workshop_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+  MODIFY `event_workshop_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
 
 --
 -- AUTO_INCREMENT for table `mentor_workshop`
 --
 ALTER TABLE `mentor_workshop`
-  MODIFY `mentor_workshop_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `mentor_workshop_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `participant_invitations`
@@ -395,7 +419,7 @@ ALTER TABLE `participant_invitations`
 -- AUTO_INCREMENT for table `rankings`
 --
 ALTER TABLE `rankings`
-  MODIFY `ranking_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `ranking_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `schools`
@@ -413,13 +437,13 @@ ALTER TABLE `teachers`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT for table `workshops`
 --
 ALTER TABLE `workshops`
-  MODIFY `workshop_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `workshop_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `workshop_ranking`
@@ -478,7 +502,7 @@ ALTER TABLE `participant_invitations`
 -- Constraints for table `rankings`
 --
 ALTER TABLE `rankings`
-  ADD CONSTRAINT `rankings_ibfk_1` FOREIGN KEY (`event_workshop_id`) REFERENCES `event_workshop` (`event_workshop_id`),
+  ADD CONSTRAINT `rankings_event_workshop` FOREIGN KEY (`event_workshop_id`) REFERENCES `event_workshop` (`event_workshop_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `rankings_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `participants` (`user_id`);
 
 --
