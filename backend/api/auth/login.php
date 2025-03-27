@@ -1,33 +1,38 @@
 <?php
-// /backend/api/auth/login.php
 
-require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/config.php";
-//require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/api_utils.php"; // Ezt most nem használjuk
-require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/src/JWT.php";
-require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/src/Key.php";
+ini_set('display_errors', 1); // Show errors directly
+ini_set('display_startup_errors', 1); // Show startup errors
+error_reporting(E_ALL); // Report all errors and warnings
+
+require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/backend/config.php";
+require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/backend/api_utils.php";
+require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/backend/src/JWT.php";
+require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/backend/src/Key.php";
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 header('Content-Type: application/json');
 // Ellenőrizzük, hogy POST kérés érkezett-e
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // JSON adatok fogadása (a $_POST helyett, mert Content-Type: application/json)
     $request_data = json_decode(file_get_contents('php://input'), true);
 
 
-    // Ellenőrizzük, hogy megkaptuk-e a szükséges adatokat
     if (isset($request_data['username'], $request_data['password'])) {
         $username = $request_data['username'];
-        $password = $request_data['password']; // Nincs hashelés!
+
 
         // 1. Felhasználó lekérdezése az adatbázisból
-        $stmt = $conn->prepare("SELECT user_id, username, password FROM users WHERE username = ?");
+        $stmt = $conn->prepare("SELECT users.user_id as `user_id`, username, participants.name as `name`, password FROM users INNER JOIN participants ON users.user_id = participants.user_id WHERE username = ?");
         $stmt->bind_param("s", $username);
         $stmt->execute();
         $result = $stmt->get_result();
         $user = $result->fetch_assoc();
 
+        error_log("Received password for user " . $username . ": " . $request_data['password']); // Log to PHP error log
+        $password_from_request = trim($request_data['password']); // Trim it
+        $hash_from_db = $user['password'];
+
         // 2. Jelszó ellenőrzése (sima szöveges összehasonlítás)
-        if ($user && $password === $user['password']) {  // Sima string összehasonlítás
+        if ($user && password_verify($password_from_request, $hash_from_db)) {
             // 3. Sikeres bejelentkezés: JWT token generálása
             $key = 'titkos_kulcsod'; // !!! Ezt a kulcsot BIZTONSÁGOS helyen tárold (pl. környezeti változóban)!
             $payload = [
@@ -48,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'token' => $jwt,
                 'user' => [
                     'userId' => $user['user_id'],
+                    'name' =>  $user['name'],
                     'username' => $user['username'],
                 ]
             ]);
@@ -68,6 +74,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 } else {
     // Nem POST kérés
     http_response_code(405); // Method Not Allowed
-     echo json_encode(["error" => "Invalid request method. Use POST."]);
+    echo json_encode(["error" => "Invalid request method. Use POST."]);
 }
 ?>
