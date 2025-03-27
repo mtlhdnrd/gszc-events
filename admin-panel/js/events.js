@@ -73,6 +73,11 @@ $(document).ready(function () {
     loadEvents();
     setupEventDelegation();
 
+    function SendInvitationsByEvent(eventId) {
+        console.log("Attempting to send invitations for event ID:", eventId);
+        // TODO: Make api call for sending invitatins --> here starts the cooking
+    }
+
     function handleEditClick() {
         let row = $(this).closest('tr');
 
@@ -134,7 +139,7 @@ $(document).ready(function () {
             row.find('select.event-status').prop('disabled', true);
             row.find('.edit-button').text('Szerkesztés');
             row.find('.cancel-button').remove();
-            updateRowVisuals(row, updatedData.status);
+            updateRowVisuals(row, updatedData.status, eventId);
         } else {
             console.error("Event with ID " + eventId + " not found for update."); // Handle error
             alert("Event with ID " + eventId + " not found for update.");
@@ -230,47 +235,46 @@ $(document).ready(function () {
     }
 
     function addEventRow(event) {
-        let row = $('<tr>');
+        let row = $('<tr>'); // Create the row element
 
-        // --- Hidden ID Cell ---
+        // Hidden ID Cell (Crucial for referencing)
         let hiddenIdCell = $('<td hidden>').append($('<span class="event-id">' + event.id + '</span>'));
         row.append(hiddenIdCell);
 
-        // --- Data Cells ---
+        // Data Cells with Inputs
         row.append($('<td>').append($('<input type="text" class="form-control event-data" data-field="name" readonly>').val(event.name)));
-        row.append($('<td>').append($('<input type="text" class="form-control event-data" data-field="date" readonly>').val(event.date)));
+        // Use type="date" for better UX if backend supports YYYY-MM-DD
+        row.append($('<td>').append($('<input type="date" class="form-control event-data" data-field="date" readonly>').val(event.date)));
         row.append($('<td>').append($('<input type="text" class="form-control event-data" data-field="location" readonly>').val(event.location)));
 
-        // --- Status Dropdown (Corrected) ---
+        // Status Dropdown
         let statusSelect = $('<select class="form-control event-status" data-field="status" disabled></select>');
-        // Helper function to create option elements
-        function createOption(value, text, isSelected) {
+        const statuses = { pending: 'Függőben', ready: 'Sikeres', failed: 'Sikertelen' };
+        for (const [value, text] of Object.entries(statuses)) {
             let option = $('<option>').val(value).text(text);
-            if (isSelected) {
-                option.attr('selected', 'selected');
+            if (event.status === value) {
+                option.prop('selected', true);
             }
-            return option;
+            statusSelect.append(option);
         }
+        row.append($('<td>').append(statusSelect));
 
-        statusSelect.append(createOption('pending', 'Függőben', event.status === 'pending'));
-        statusSelect.append(createOption('ready', 'Sikeres', event.status === 'ready'));
-        statusSelect.append(createOption('failed', 'Sikertelen', event.status === 'failed'));
-        row.append($('<td>').append(statusSelect)); // Add the status select
+        // Actions Cell
+        let actionsCell = $('<td class="actions-cell text-nowrap">'); // Prevent button wrapping
+        let editButton = $(`<button class="btn btn-primary btn-sm edit-button mx-1" id="edit-event-btn-${event.id}">Szerkesztés</button>`);
+        let deleteButton = $(`<button class="btn btn-danger btn-sm delete-button mx-1" id="delete-event-btn-${event.id}">Törlés</button>`);
 
-        // --- Actions Cell ---
-        let actionsCell = $('<td>');
-        let editButton = $(`<button class="btn btn-primary btn-sm edit-button" id="edit-event-btn-${event.id}">Szerkesztés</button>`);
-        let deleteButton = $(`<button class="btn btn-danger btn-sm delete-button" id="delete-event-btn-${event.id}">Törlés</button>`);
         actionsCell.append(editButton, deleteButton);
+
         row.append(actionsCell);
 
-        // --- Add Row and Set Color ---
         $('#eventsTable tbody').append(row);
-        updateRowVisuals(row, event.status); // Set initial color based on status
+        updateRowVisuals(row, event.status);
     }
-    function updateRowVisuals(row, status) {
-        // Remove existing status classes from ALL td elements within the row
-        row.find('td').removeClass('status-pending status-ready status-failed');
+
+    function updateRowVisuals(row, status, eventId) {
+        // --- Background Color Update ---
+        row.find('td').removeClass('status-pending status-ready status-failed'); // Clear existing status classes from TDs
 
         // Add the appropriate status class to ALL td elements within the row
         switch (status) {
@@ -283,6 +287,40 @@ $(document).ready(function () {
             case 'failed':
                 row.find('td').addClass('status-failed');
                 break;
+        }
+
+        // --- Invite Button Visibility Update ---
+        if (eventId === undefined || eventId < 0) {
+             try { // Attempt to get ID if not passed - defensive coding
+                 eventId = parseInt(row.find('.event-id').text(), 10);
+                 if (isNaN(eventId)) throw new Error("NaN");
+             } catch(e) {
+                console.error("updateRowVisuals called without a valid eventId for row:", row);
+                return;
+             }
+        }
+
+        const actionsCell = row.find('td.actions-cell');
+        const buttonId = `invite-event-btn-${eventId}`; // Unique ID for the button in this row
+        const inviteButtonSelector = `#${buttonId}`;
+        const existingInviteButton = actionsCell.find(inviteButtonSelector); // Find *within* this row's actions cell
+
+        if (status === 'pending') {
+            // If status is pending, ensure the button exists
+            if (existingInviteButton.length === 0) {
+                let inviteButton = $(`<button class="btn btn-info btn-sm invite-button ms-1" id="${buttonId}">Meghívók küldése</button>`);
+                 let deleteButton = actionsCell.find('.delete-button');
+                 if (deleteButton.length > 0) {
+                     deleteButton.after(inviteButton);
+                 } else {
+                     // Fallback: append to the end if delete button wasn't found
+                     actionsCell.append(inviteButton);
+                 }
+            }
+        } else {
+            if (existingInviteButton.length > 0) {
+                existingInviteButton.remove(); 
+            }
         }
     }
 
@@ -342,9 +380,25 @@ $(document).ready(function () {
     }
 
     function setupEventDelegation() {
-        $('#eventsTable tbody').on('click', '.edit-button', handleEditClick);
-        $('#eventsTable tbody').on('click', '.cancel-button', handleCancelClick);
-        $('#eventsTable tbody').on('click', '.delete-button', handleDeleteClick);
+        const tableBody = $('#eventsTable tbody'); // Cache selector
+
+        tableBody.on('click', '.edit-button', handleEditClick);
+        tableBody.on('click', '.cancel-button', handleCancelClick);
+        tableBody.on('click', '.delete-button', handleDeleteClick);
+
+        tableBody.on('click', '.invite-button', function() {
+            const row = $(this).closest('tr');
+            const eventId = parseInt(row.find('.event-id').text(), 10);
+
+            if (isNaN(eventId)) {
+                console.error("Could not get event ID for sending invitations from row:", row);
+                alert("Hiba: Esemény azonosító nem található a meghívók küldéséhez.");
+                return;
+            }
+
+            // Call the dedicated function
+            SendInvitationsByEvent(eventId);
+        });
     }
     return {
         EventContainer: EventContainer, // Export the *class* itself
