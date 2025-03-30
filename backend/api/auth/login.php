@@ -27,7 +27,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = $stmt->get_result();
         $user = $result->fetch_assoc();
 
-        error_log("Received password for user " . $username . ": " . $request_data['password']); // Log to PHP error log
         $password_from_request = trim($request_data['password']); // Trim it
         $hash_from_db = $user['password'];
 

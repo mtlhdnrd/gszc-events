@@ -74,8 +74,20 @@ $(document).ready(function () {
     setupEventDelegation();
 
     function SendInvitationsByEvent(eventId) {
-        console.log("Attempting to send invitations for event ID:", eventId);
         // TODO: Make api call for sending invitatins --> here starts the cooking
+        $.ajax({
+            type: "POST",
+            url: "../backend/api/invitations/initiate_event_invitations.php",
+            dataType: "json",
+            data: {eventId: eventId},
+            success: function(data, textStatus, xhr){
+                console.log(data);
+            },
+            error: function (xhr, status, error) {
+                console.error("Error initiating event invitations:", error);
+                alert("Hiba történt a meghívók kiküldésekor, kérjük póbálja később");
+            }
+        });
     }
 
     function handleEditClick() {

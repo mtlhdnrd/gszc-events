@@ -31,12 +31,6 @@
                 <li class="nav-item">
                     <a class="nav-link" href="#" data-target="rankings">Rangsorok</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#" data-target="headTeachers">Osztályfőnökök</a>
-                </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link" data-target="invitations">Meghívók</a>
-                </li>
             </ul>
         </div>
     </nav>
@@ -388,72 +382,6 @@
                 </table>
             </div>
         </div>
-        <div id="headTeachers" class="content-section" style="display: none;">
-            <h1>Osztályfőnökök kezelése</h1>
-            <button id="newHeadTeacherBtn" class="btn btn-primary mb-3">Új osztályfőnök</button>
-
-            <table class="table table-striped table-bordered" id="headTeachersTable">
-                <thead>
-                    <tr>
-                        <th>Név</th>
-                        <th>Email</th>
-                        <th>Telefonszám</th>
-                        <th>Műveletek</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Head Teachers will be loaded here -->
-                </tbody>
-            </table>
-
-            <!-- Modal for New Head Teacher -->
-            <div class="modal fade" id="newHeadTeacherModal" tabindex="-1" role="dialog"
-                aria-labelledby="newHeadTeacherModalLabel" aria-hidden="true">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="newHeadTeacherModalLabel">Új osztályfőnök felvétele</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">×</span>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <form id="newHeadTeacherForm">
-                                <div class="form-group">
-                                    <label for="headTeacherName">Név:</label>
-                                    <input type="text" class="form-control" id="headTeacherName" name="headTeacherName">
-                                </div>
-                                <div class="form-group">
-                                    <label for="headTeacherEmail">Email:</label>
-                                    <input type="email" class="form-control" id="headTeacherEmail"
-                                        name="headTeacherEmail">
-                                </div>
-                                <div class="form-group">
-                                    <label for="headTeacherPhoneNumber">Telefonszám:</label>
-                                    <input type="text" class="form-control" id="headTeacherPhoneNumber"
-                                        name="headTeacherPhoneNumber">
-                                </div>
-                            </form>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Mégse</button>
-                            <button type="button" class="btn btn-primary" id="saveNewHeadTeacherBtn">Mentés</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div id="invitations" class="content-section">
-            <h1>Meghívók kezelése</h1>
-            <div class="form-group">
-                <label for="eventSelectInvitations">Esemény:</label>
-                <select class="form-control" id="eventSelectInvitations">
-                    <option value="">Válassz eseményt</option>
-                    <!-- Events will be loaded here -->
-                </select>
-            </div>
-            <button id="sendInvitationsBtn" class="btn btn-primary">Meghívók Küldése</button>
-        </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
@@ -464,8 +392,6 @@
     <script src="js/occupations.js"></script>
     <script src="js/participants.js"></script>
     <script src="js/rankings.js"></script>
-    <!--script src="js/headteachers.js"></script>
-    <script src="js/invitations.js"></script-->
 </body>
 
 </html>
