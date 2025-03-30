@@ -2,11 +2,19 @@
 require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/backend/config.php";
 require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/backend/api_utils.php";
 
-function processWorkshopInvitations($eventWorkshopId, $conn){
+function processWorkshopInvitations($eventWorkshopId, $conn)
+{
     $fetchedData = [
         'ew_data' => null,
         'rankings' => [],
-        'invitations' => []
+        'invitations' => [],
+        'needed_students' => 0,
+        'needed_teachers' => 0,
+        'accepted_students' => 0,
+        'pending_students' => 0,
+        'accepted_teachers' => 0,
+        'pending_teachers' => 0,
+        'target_met' => false
     ];
     try {
         // --- 1a: Fetch Event Workshop & Event Details ---
@@ -18,7 +26,7 @@ function processWorkshopInvitations($eventWorkshopId, $conn){
                        JOIN events AS e ON ew.event_id = e.event_id
                        WHERE ew.event_workshop_id = ?
                        LIMIT 1";
-        
+
         $stmtEwEvent = $conn->prepare($sqlEwEvent);
         if (!$stmtEwEvent) throw new Exception("Prepare failed (ew_event): " . $conn->error);
 
@@ -31,7 +39,7 @@ function processWorkshopInvitations($eventWorkshopId, $conn){
             $stmtEwEvent->close();
             return false;
         }
-        
+
         $fetchedData['ew_data'] = $resultEwEvent->fetch_assoc();
         $stmtEwEvent->close();
 
@@ -44,7 +52,7 @@ function processWorkshopInvitations($eventWorkshopId, $conn){
 
         $stmtRankings = $conn->prepare($sqlRankings);
         if (!$stmtRankings) throw new Exception("Prepare failed (rankings): " . $conn->error);
-        
+
         $stmtRankings->bind_param("i", $eventWorkshopId);
         $stmtRankings->execute();
         $resultRankings = $stmtRankings->get_result();
@@ -52,7 +60,7 @@ function processWorkshopInvitations($eventWorkshopId, $conn){
         // Fetch all rankings into the array
         while ($row = $resultRankings->fetch_assoc()) {
             // Store the whole row;
-            $fetchedData['rankings'][] = $row; 
+            $fetchedData['rankings'][] = $row;
         }
         $stmtRankings->close();
 
@@ -72,7 +80,7 @@ function processWorkshopInvitations($eventWorkshopId, $conn){
 
         // Fetch all invitations, keying the array by user_id for easy lookup later
         while ($row = $resultInvitations->fetch_assoc()) {
-            $userId = (int)$row['user_id']; 
+            $userId = (int)$row['user_id'];
             $fetchedData['invitations'][$userId] = [
                 'status' => $row['status'],
                 'invitation_id' => (int)$row['invitation_id']
@@ -80,19 +88,74 @@ function processWorkshopInvitations($eventWorkshopId, $conn){
         }
         $stmtInvitations->close();
 
-        // --- Data Fetching Complete ---
-        
-        // For now, just log the fetched data (for debugging)
-        error_log("processWorkshopInvitations({$eventWorkshopId}): Data fetched successfully.");
-        error_log("EW Data: " . print_r($fetchedData['ew_data'], true));
-        error_log("Rankings: " . print_r($fetchedData['rankings'], true));
-        error_log("Invitations: " . print_r($fetchedData['invitations'], true));
+        /*
+            $fetchedData['ew_data']
+            $fetchedData['rankings']
+            $fetchedData['invitations']
+        */
 
+        // --- Step 2: Calculate Required Participant Count ---
+
+        // Get the base required numbers from the fetched data
+        $base_students_required = (int)($fetchedData['ew_data']['number_of_mentors_required'] ?? 0);
+        $base_teachers_required = (int)($fetchedData['ew_data']['number_of_teachers_required'] ?? 0);
+        $busyness = $ewData['busyness'] ?? 'high';
+
+        if (strtolower($busyness) === 'low') {
+            $needed_students = (int)ceil($base_students_required * 0.5);
+            $needed_teachers = (int)ceil($base_teachers_required * 0.5);
+        } else {
+            $needed_students = $base_students_required;
+            $needed_teachers = $base_teachers_required;
+        }
+
+        $fetchedData['needed_students'] = $needed_students;
+        $fetchedData['needed_teachers'] = $needed_teachers;
+
+
+        // --- Step 3: Calculating current state of invitations
+
+        foreach ($fetchedData['rankings'] as $rankedUser) {
+            $userId = (int)$rankedUser['user_id'];
+            $userType = $rankedUser['user_type'];
+
+            if (isset($fetchedData['invitations'][$userId])) {
+                $invitationStatus = $fetchedData['invitations'][$userId]['status'];
+                if ($invitationStatus === 'accepted') {
+
+                    if ($userType === 'student') {
+                        $fetchedData['accepted_students']++;
+                    } elseif ($userType === 'teacher') {
+                        $fetchedData['accepted_teachers']++;
+                    }
+                } else if ($invitationStatus === 'pending') {
+                    if ($userType === 'student') {
+                        $fetchedData['pending_students']++;
+                    } else if ($userType === 'teacher') {
+                        $fetchedData['pending_teachers']++;
+                    }
+                }
+            }
+        }
+
+        // --- Step 4: Check if Target is Met ---
+        if (
+            $fetchedData['accepted_students'] >= $fetchedData['needed_students'] &&
+            $fetchedData['accepted_teachers'] >= $fetchedData['needed_teachers']
+        ) {
+            $fetchedData['target_met'] = true;
+            // Log that the target is met and potentially return early
+            error_log("processWorkshopInvitations({$eventWorkshopId}): Target met. Accepted S:{$fetchedData['accepted_students']}/{$fetchedData['needed_students']}, T:{$fetchedData['accepted_teachers']}/{$fetchedData['needed_teachers']}");
+
+            return $fetchedData;
+        }
+        error_log("processWorkshopInvitations({$eventWorkshopId}): Status - Accepted S:{$fetchedData['accepted_students']}, Pending S:{$fetchedData['pending_students']}, Accepted T:{$fetchedData['accepted_teachers']}, Pending T:{$fetchedData['pending_teachers']}");
+
+        // Return the complete data structure including calculated needs
         return $fetchedData;
-
     } catch (mysqli_sql_exception $e) {
         error_log("Database Error in processWorkshopInvitations({$eventWorkshopId}): (" . $e->getCode() . ") " . $e->getMessage());
-        throw $e; 
+        throw $e;
     } catch (Exception $e) {
         error_log("General Error in processWorkshopInvitations({$eventWorkshopId}): " . $e->getMessage());
         throw $e; // Re-throw
