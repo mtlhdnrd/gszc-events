@@ -12,11 +12,11 @@ class AuthService {
   Future<AuthResult> login(String username, String password) async {
     try {
       // Jelszó hashelése (SHA-256-tal) - most kikommentezzük, de itt marad, ha később kell
-      // final hashedPassword = _hashPassword(password);
+      //final hashedPassword = _hashPassword(password);
       final response = await http.post(
         Uri.parse('${ApiConstants.baseUrl}$_loginEndpoint'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'username': username, 'password': password}), // NYÍLT SZÖVEGŰ jelszót küldünk
+        body: jsonEncode({'username': username, 'password': password}), 
       );
 
       if (response.statusCode == 200) {

@@ -53,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_user?.username ?? 'Home'), // Felhasználónév, vagy "Home"
+        title: Text(_user?.name ?? 'Home'), // Felhasználónév, vagy "Home"
         actions: [
           IconButton(
             icon: Icon(Icons.logout),

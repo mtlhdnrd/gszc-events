@@ -87,7 +87,6 @@ if (validate_request("POST", $expected_fields)) {
 
     // --- Update Database ---
 
-    //FIXME: Update for teacher is not working
     $query = "";
     if($type=='student')
     {
