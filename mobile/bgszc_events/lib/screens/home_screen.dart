@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:bgszc_events/models/invitation.dart';
-import 'package:bgszc_events/services/invitation_service.dart'; // Még ha nincs is API, az import kell
+import 'package:bgszc_events/services/invitation_service.dart';
 import 'package:bgszc_events/widgets/invitation_card.dart';
 import 'package:bgszc_events/services/auth_service.dart';
 import 'package:bgszc_events/models/user.dart';

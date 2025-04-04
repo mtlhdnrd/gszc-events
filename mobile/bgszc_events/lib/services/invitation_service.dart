@@ -8,9 +8,9 @@ class InvitationService {
   final AuthService _authService = AuthService();
 
   static const _getInvitationEndpoint =
-      '/student_invitations/get_student_invitation_by_id.php'; // GET - Aktuális meghívó
+      '/invitations/get_participant_invitation_by_id.php'; // GET - Aktuális meghívó
   static const _updateInvitationStatusEndpoint =
-      '/student_invitations/update_invitation_status.php'; // POST - Státusz frissítése
+      '/invitations/update_invitation_status.php'; // POST - Státusz frissítése
 
   Future<Invitation?> getInvitation() async {
     final token = await _authService.getToken();

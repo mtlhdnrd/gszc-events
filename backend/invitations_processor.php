@@ -2,26 +2,39 @@
 require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/backend/config.php";
 require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/backend/api_utils.php";
 
+define('INVITATION_COOLDOWN_DAYS', 30);
 function processWorkshopInvitations($eventWorkshopId, $conn)
 {
-    $fetchedData = [
-        'ew_data' => null,
-        'rankings' => [],
-        'invitations' => [],
-        'needed_students' => 0,
-        'needed_teachers' => 0,
-        'accepted_students' => 0,
-        'pending_students' => 0,
-        'accepted_teachers' => 0,
-        'pending_teachers' => 0,
-        'target_met' => false
+     // Structure to hold fetched data and processing results
+     $fetchedData = [
+        'ew_data' => null,                    // Details of the event_workshop and event
+        'rankings' => [],                     // Original ranking list for this workshop (user_id, ranking_number, user_type)
+        'invitations' => [],                  // Existing invitations map (user_id => ['status', 'invitation_id'])
+        'needed_students' => 0,               // Calculated number of students needed
+        'needed_teachers' => 0,               // Calculated number of teachers needed
+        'accepted_students' => 0,             // Count of accepted student invitations
+        'pending_students' => 0,              // Count of pending student invitations
+        'accepted_teachers' => 0,             // Count of accepted teacher invitations
+        'pending_teachers' => 0,              // Count of pending teacher invitations
+        'target_met' => false,                // Flag indicating if the required number of accepted mentors is met
+        'newly_invited_students' => 0,        // Count of new student invitations sent in this run
+        'newly_invited_teachers' => 0,        // Count of new teacher invitations sent in this run
+        'skipped_cooldown_students' => 0,     // Count of students skipped due to cooldown
+        'skipped_cooldown_teachers' => 0,     // Count of teachers skipped due to cooldown
+        'skipped_already_invited_students' => 0, // Count of students skipped because they already have an invitation
+        'skipped_already_invited_teachers' => 0  // Count of teachers skipped because they already have an invitation
     ];
+
+    // --- Start Database Transaction ---
+    // Ensures that sending invitations for this workshop is an atomic operation.
+    $conn->begin_transaction();
+
     try {
-        // --- 1a: Fetch Event Workshop & Event Details ---
-        $sqlEwEvent = "SELECT 
-                           ew.event_id, ew.workshop_id, 
-                           ew.number_of_mentors_required, ew.number_of_teachers_required, 
-                           ew.busyness, e.date AS event_date 
+        // --- Step 1a: Fetch Event Workshop & Event Details ---
+        $sqlEwEvent = "SELECT
+                           ew.event_id, ew.workshop_id,
+                           ew.number_of_mentors_required, ew.number_of_teachers_required,
+                           ew.busyness, e.date AS event_date
                        FROM event_workshop AS ew
                        JOIN events AS e ON ew.event_id = e.event_id
                        WHERE ew.event_workshop_id = ?
@@ -37,18 +50,21 @@ function processWorkshopInvitations($eventWorkshopId, $conn)
         if ($resultEwEvent->num_rows === 0) {
             error_log("processWorkshopInvitations: Event Workshop ID {$eventWorkshopId} not found or invalid.");
             $stmtEwEvent->close();
-            return false;
+            $conn->rollback(); // Rollback the transaction
+            return ['error' => "Event Workshop ID {$eventWorkshopId} not found."]; // Return specific error
         }
 
         $fetchedData['ew_data'] = $resultEwEvent->fetch_assoc();
         $stmtEwEvent->close();
 
-        // --- 1b: Fetch Rankings for this Event Workshop ---
-        $sqlRankings = "SELECT 
+        $currentEventDate = $fetchedData['ew_data']['event_date']; // Event date needed for cooldown check
+
+        // --- Step 1b: Fetch Rankings for this Event Workshop ---
+        $sqlRankings = "SELECT
                             r.user_id, r.ranking_number, r.user_type
                         FROM rankings AS r
-                        WHERE r.event_workshop_id = ? 
-                        ORDER BY r.user_type, r.ranking_number ASC";
+                        WHERE r.event_workshop_id = ?
+                        ORDER BY r.user_type, r.ranking_number ASC"; // Order is crucial!
 
         $stmtRankings = $conn->prepare($sqlRankings);
         if (!$stmtRankings) throw new Exception("Prepare failed (rankings): " . $conn->error);
@@ -57,19 +73,26 @@ function processWorkshopInvitations($eventWorkshopId, $conn)
         $stmtRankings->execute();
         $resultRankings = $stmtRankings->get_result();
 
-        // Fetch all rankings into the array
+        // Load rankings and separate them by type while preserving order
+        $ranked_students = [];
+        $ranked_teachers = [];
         while ($row = $resultRankings->fetch_assoc()) {
-            // Store the whole row;
-            $fetchedData['rankings'][] = $row;
+            $fetchedData['rankings'][] = $row; // Save the original ranking entry
+            if ($row['user_type'] === 'student') {
+                $ranked_students[] = $row;
+            } elseif ($row['user_type'] === 'teacher') {
+                $ranked_teachers[] = $row;
+            }
         }
         $stmtRankings->close();
 
-
-        // --- 1c: Fetch Existing Invitations for this Event Workshop ---
-        $sqlInvitations = "SELECT 
-                               pi.user_id, pi.status, pi.invitation_id 
+        // --- Step 1c: Fetch Existing Invitations for this Event Workshop ---
+        // Lock the rows using `FOR UPDATE` to prevent race conditions if multiple processes run concurrently.
+        // The lock is held until the transaction is committed or rolled back.
+        $sqlInvitations = "SELECT
+                               pi.user_id, pi.status, pi.invitation_id
                            FROM participant_invitations AS pi
-                           WHERE pi.event_workshop_id = ?";
+                           WHERE pi.event_workshop_id = ? FOR UPDATE"; // Locking!
 
         $stmtInvitations = $conn->prepare($sqlInvitations);
         if (!$stmtInvitations) throw new Exception("Prepare failed (invitations): " . $conn->error);
@@ -78,7 +101,7 @@ function processWorkshopInvitations($eventWorkshopId, $conn)
         $stmtInvitations->execute();
         $resultInvitations = $stmtInvitations->get_result();
 
-        // Fetch all invitations, keying the array by user_id for easy lookup later
+        // Store existing invitations, keyed by user_id for easy lookup
         while ($row = $resultInvitations->fetch_assoc()) {
             $userId = (int)$row['user_id'];
             $fetchedData['invitations'][$userId] = [
@@ -88,19 +111,13 @@ function processWorkshopInvitations($eventWorkshopId, $conn)
         }
         $stmtInvitations->close();
 
-        /*
-            $fetchedData['ew_data']
-            $fetchedData['rankings']
-            $fetchedData['invitations']
-        */
 
         // --- Step 2: Calculate Required Participant Count ---
-
-        // Get the base required numbers from the fetched data
         $base_students_required = (int)($fetchedData['ew_data']['number_of_mentors_required'] ?? 0);
         $base_teachers_required = (int)($fetchedData['ew_data']['number_of_teachers_required'] ?? 0);
-        $busyness = $ewData['busyness'] ?? 'high';
+        $busyness = $fetchedData['ew_data']['busyness'] ?? 'high';
 
+        // Adjust required numbers based on busyness level
         if (strtolower($busyness) === 'low') {
             $needed_students = (int)ceil($base_students_required * 0.5);
             $needed_teachers = (int)ceil($base_teachers_required * 0.5);
@@ -108,56 +125,182 @@ function processWorkshopInvitations($eventWorkshopId, $conn)
             $needed_students = $base_students_required;
             $needed_teachers = $base_teachers_required;
         }
+        // If no participants are needed, no point in continuing
+         if ($needed_students <= 0 && $needed_teachers <= 0) {
+             error_log("processWorkshopInvitations({$eventWorkshopId}): No participants required (S:0, T:0).");
+             $conn->commit(); // Commit the transaction (nothing changed)
+             return $fetchedData; // Return the current state
+         }
 
         $fetchedData['needed_students'] = $needed_students;
         $fetchedData['needed_teachers'] = $needed_teachers;
 
-
-        // --- Step 3: Calculating current state of invitations
-
-        foreach ($fetchedData['rankings'] as $rankedUser) {
-            $userId = (int)$rankedUser['user_id'];
-            $userType = $rankedUser['user_type'];
-
-            if (isset($fetchedData['invitations'][$userId])) {
-                $invitationStatus = $fetchedData['invitations'][$userId]['status'];
-                if ($invitationStatus === 'accepted') {
-
-                    if ($userType === 'student') {
-                        $fetchedData['accepted_students']++;
-                    } elseif ($userType === 'teacher') {
-                        $fetchedData['accepted_teachers']++;
-                    }
-                } else if ($invitationStatus === 'pending') {
-                    if ($userType === 'student') {
-                        $fetchedData['pending_students']++;
-                    } else if ($userType === 'teacher') {
-                        $fetchedData['pending_teachers']++;
-                    }
+        // --- Step 3: Calculate Current State of Invitations ---
+        // Count accepted and pending invitations based on the fetched data
+        // Note: Uses the $fetchedData['invitations'] array populated in Step 1c
+        foreach ($fetchedData['invitations'] as $userId => $invitationData) {
+            // Find the user's type from the ranking list (or participants table if needed)
+            $userType = null;
+            foreach ($fetchedData['rankings'] as $rankedUser) {
+                if ((int)$rankedUser['user_id'] === $userId) {
+                    $userType = $rankedUser['user_type'];
+                    break;
                 }
             }
+            // Log and skip if user has an invitation but isn't in the ranking (should not happen)
+            if ($userType === null) {
+                error_log("processWorkshopInvitations({$eventWorkshopId}): User {$userId} has invitation but not found in rankings. Skipping count.");
+                continue;
+            }
+
+            // Increment counts based on status and type
+            if ($invitationData['status'] === 'accepted') {
+                if ($userType === 'student') $fetchedData['accepted_students']++;
+                elseif ($userType === 'teacher') $fetchedData['accepted_teachers']++;
+            } elseif ($invitationData['status'] === 'pending') {
+                if ($userType === 'student') $fetchedData['pending_students']++;
+                elseif ($userType === 'teacher') $fetchedData['pending_teachers']++;
+            }
+            // 'rejected' status is ignored for counting purposes here.
         }
 
-        // --- Step 4: Check if Target is Met ---
-        if (
-            $fetchedData['accepted_students'] >= $fetchedData['needed_students'] &&
-            $fetchedData['accepted_teachers'] >= $fetchedData['needed_teachers']
-        ) {
+        // --- Step 4: Check if Target is Met (based on ACCEPTED only) ---
+        // If the number of ACCEPTED mentors already meets the requirement, no more invites needed.
+        if ($fetchedData['accepted_students'] >= $needed_students && $fetchedData['accepted_teachers'] >= $needed_teachers) {
             $fetchedData['target_met'] = true;
-            // Log that the target is met and potentially return early
-            error_log("processWorkshopInvitations({$eventWorkshopId}): Target met. Accepted S:{$fetchedData['accepted_students']}/{$fetchedData['needed_students']}, T:{$fetchedData['accepted_teachers']}/{$fetchedData['needed_teachers']}");
-
-            return $fetchedData;
+            error_log("processWorkshopInvitations({$eventWorkshopId}): Target met by ACCEPTED participants. Accepted S:{$fetchedData['accepted_students']}/{$needed_students}, T:{$fetchedData['accepted_teachers']}/{$needed_teachers}");
+            $conn->commit(); // Commit the transaction (no new invites were sent)
+            return $fetchedData; // Return the current state
         }
-        error_log("processWorkshopInvitations({$eventWorkshopId}): Status - Accepted S:{$fetchedData['accepted_students']}, Pending S:{$fetchedData['pending_students']}, Accepted T:{$fetchedData['accepted_teachers']}, Pending T:{$fetchedData['pending_teachers']}");
 
-        // Return the complete data structure including calculated needs
+        error_log("processWorkshopInvitations({$eventWorkshopId}): Status before sending - Needed S:{$needed_students}, T:{$needed_teachers} | Accepted S:{$fetchedData['accepted_students']}, Pending S:{$fetchedData['pending_students']} | Accepted T:{$fetchedData['accepted_teachers']}, Pending T:{$fetchedData['pending_teachers']}");
+
+
+        // --- Step 5: Iterate Through Rankings and Send New Invitations ---
+
+        // --- Invite Students ---
+        if ($fetchedData['accepted_students'] < $needed_students) { // Only invite if more students are needed
+            foreach ($ranked_students as $student) {
+                $userId = (int)$student['user_id'];
+                $rankingNumber = (int)$student['ranking_number'];
+
+                // a) Check Capacity Limit: (accepted + pending + newly_invited_in_this_run)
+                //    IMPORTANT: Only send if the potential total (if this one is accepted) doesn't exceed the need.
+                //    Prevents over-inviting.
+                $potential_total_students = $fetchedData['accepted_students'] + $fetchedData['pending_students'] + $fetchedData['newly_invited_students'];
+                if ($potential_total_students >= $needed_students) {
+                    error_log("processWorkshopInvitations({$eventWorkshopId}): Student limit reached ({$potential_total_students} >= {$needed_students}). Stopping student invites.");
+                    break; // No more student invites for this workshop
+                }
+
+                // b) Check if Already Invited: Does this user already have an invitation (any status)?
+                if (isset($fetchedData['invitations'][$userId])) {
+                    $fetchedData['skipped_already_invited_students']++;
+                    error_log("processWorkshopInvitations({$eventWorkshopId}): Skipping student {$userId} (rank {$rankingNumber}), already has invitation status: " . $fetchedData['invitations'][$userId]['status']);
+                    continue; // Move to the next student in rank
+                }
+
+                // c) Check Cooldown: Has the user participated recently?
+                if (isOnCooldown($userId, $currentEventDate, INVITATION_COOLDOWN_DAYS, $conn)) {
+                    $fetchedData['skipped_cooldown_students']++;
+                     error_log("processWorkshopInvitations({$eventWorkshopId}): Skipping student {$userId} (rank {$rankingNumber}) due to cooldown.");
+                    continue; // Move to the next student in rank
+                }
+
+                // d) Send Invitation: If all checks pass, insert a new 'pending' invitation.
+                $sqlInsertInvite = "INSERT INTO participant_invitations (event_workshop_id, user_id, ranking_number, status) VALUES (?, ?, ?, 'pending')";
+                $stmtInsert = $conn->prepare($sqlInsertInvite);
+                if (!$stmtInsert) {
+                    // On prepare failure, better to rollback the whole transaction for consistency.
+                    throw new Exception("Prepare failed (insert student invite user {$userId}): " . $conn->error);
+                }
+                $stmtInsert->bind_param("iii", $eventWorkshopId, $userId, $rankingNumber);
+                $success = $stmtInsert->execute();
+                if (!$success) {
+                     // On execute failure, rollback.
+                     throw new Exception("Execute failed (insert student invite user {$userId}): " . $stmtInsert->error);
+                }
+                $stmtInsert->close();
+
+                // Increment the count of newly invited students for this run
+                $fetchedData['newly_invited_students']++;
+                error_log("processWorkshopInvitations({$eventWorkshopId}): Sent PENDING invitation to student {$userId} (rank {$rankingNumber}).");
+
+            } // end foreach student
+        } else {
+             error_log("processWorkshopInvitations({$eventWorkshopId}): No new student invitations needed (accepted >= needed).");
+        }
+
+
+        // --- Invite Teachers ---
+        // Apply the same logic as for students, using teacher data.
+        if ($fetchedData['accepted_teachers'] < $needed_teachers) { // Only invite if more teachers are needed
+            foreach ($ranked_teachers as $teacher) {
+                $userId = (int)$teacher['user_id'];
+                $rankingNumber = (int)$teacher['ranking_number'];
+
+                 // a) Check Capacity Limit: (accepted + pending + newly_invited_in_this_run)
+                $potential_total_teachers = $fetchedData['accepted_teachers'] + $fetchedData['pending_teachers'] + $fetchedData['newly_invited_teachers'];
+                 if ($potential_total_teachers >= $needed_teachers) {
+                    error_log("processWorkshopInvitations({$eventWorkshopId}): Teacher limit reached ({$potential_total_teachers} >= {$needed_teachers}). Stopping teacher invites.");
+                    break; // No more teacher invites for this workshop
+                }
+
+                // b) Check if Already Invited:
+                if (isset($fetchedData['invitations'][$userId])) {
+                    $fetchedData['skipped_already_invited_teachers']++;
+                     error_log("processWorkshopInvitations({$eventWorkshopId}): Skipping teacher {$userId} (rank {$rankingNumber}), already has invitation status: " . $fetchedData['invitations'][$userId]['status']);
+                    continue; // Move to the next teacher
+                }
+
+                // c) Check Cooldown:
+                if (isOnCooldown($userId, $currentEventDate, INVITATION_COOLDOWN_DAYS, $conn)) {
+                    $fetchedData['skipped_cooldown_teachers']++;
+                    error_log("processWorkshopInvitations({$eventWorkshopId}): Skipping teacher {$userId} (rank {$rankingNumber}) due to cooldown.");
+                    continue; // Move to the next teacher
+                }
+
+                // d) Send Invitation:
+                 $sqlInsertInvite = "INSERT INTO participant_invitations (event_workshop_id, user_id, ranking_number, status) VALUES (?, ?, ?, 'pending')";
+                $stmtInsert = $conn->prepare($sqlInsertInvite);
+                 if (!$stmtInsert) {
+                     throw new Exception("Prepare failed (insert teacher invite user {$userId}): " . $conn->error);
+                 }
+                 $stmtInsert->bind_param("iii", $eventWorkshopId, $userId, $rankingNumber);
+                 $success = $stmtInsert->execute();
+                 if (!$success) {
+                      throw new Exception("Execute failed (insert teacher invite user {$userId}): " . $stmtInsert->error);
+                 }
+                 $stmtInsert->close();
+
+                // Increment the count of newly invited teachers
+                $fetchedData['newly_invited_teachers']++;
+                error_log("processWorkshopInvitations({$eventWorkshopId}): Sent PENDING invitation to teacher {$userId} (rank {$rankingNumber}).");
+
+            } // end foreach teacher
+        } else {
+             error_log("processWorkshopInvitations({$eventWorkshopId}): No new teacher invitations needed (accepted >= needed).");
+        }
+
+        // --- Commit Transaction ---
+        // If we reached this point without errors, finalize the changes (new invitations).
+        $conn->commit();
+        error_log("processWorkshopInvitations({$eventWorkshopId}): Successfully processed. Newly invited S:{$fetchedData['newly_invited_students']}, T:{$fetchedData['newly_invited_teachers']}");
+
+        // Return the full results data structure
         return $fetchedData;
+
     } catch (mysqli_sql_exception $e) {
-        error_log("Database Error in processWorkshopInvitations({$eventWorkshopId}): (" . $e->getCode() . ") " . $e->getMessage());
-        throw $e;
+        // Rollback transaction on database errors
+        $conn->rollback();
+        error_log("Database Error in processWorkshopInvitations({$eventWorkshopId}): (" . $e->getCode() . ") " . $e->getMessage() . " - Transaction rolled back.");
+        // Return an error object/array
+        return ['error' => 'Database error during processing', 'details' => $e->getMessage()];
     } catch (Exception $e) {
-        error_log("General Error in processWorkshopInvitations({$eventWorkshopId}): " . $e->getMessage());
-        throw $e; // Re-throw
+        // Rollback transaction on general errors
+        $conn->rollback();
+        error_log("General Error in processWorkshopInvitations({$eventWorkshopId}): " . $e->getMessage() . " - Transaction rolled back.");
+         // Return an error object/array
+         return ['error' => 'General error during processing', 'details' => $e->getMessage()];
     }
 }
