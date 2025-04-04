@@ -62,20 +62,38 @@ try {
         exit;
     }
 
-    $processedCount = 0;
+    $processedResults = [];
+    $errorOccurred = false;
     // 3. Ciklus az event_workshop_id-kon
     foreach ($eventWorkshopIds as $eventWorkshopId) {
-        processWorkshopInvitations($eventWorkshopId, $conn);
-        $processedCount++;
+        $result = processWorkshopInvitations($eventWorkshopId, $conn);
+        $processedResults[$eventWorkshopId] = $result; // Eredmény tárolása
+
+        // Ellenőrizzük, hogy a processWorkshopInvitations jelzett-e hibát
+        if (isset($result['error'])) {
+            error_log("Error processing workshop {$eventWorkshopId}: " . $result['details']);
+            $errorOccurred = true;
+        }
     }
 
-    // 4. Sikeres válasz küldése
-    http_response_code(200);
-    echo json_encode([
-        "message" => "Invitation process initiated for {$processedCount} workshop(s) linked to event ID {$eventId}.",
-        "event_id" => $eventId,
-        "processed_workshop_count" => $processedCount
-    ]);
+    // 4. Sikeres (vagy részlegesen sikeres) válasz küldése
+    if ($errorOccurred) {
+        // Ha volt hiba, lehet, hogy más HTTP státuszkódot adunk, pl. 207 Multi-Status
+        http_response_code(207);
+         echo json_encode([
+             "message" => "Invitation process completed with errors for event ID {$eventId}. Check logs for details.",
+             "event_id" => $eventId,
+             "results_per_workshop" => $processedResults // Tartalmazza a sikeres és hibás eredményeket is
+         ]);
+    } else {
+         http_response_code(200);
+         echo json_encode([
+             "message" => "Invitation process finished for event ID {$eventId}.",
+             "event_id" => $eventId,
+             "processed_workshop_count" => count($eventWorkshopIds),
+             "results_per_workshop" => $processedResults // Részletes eredmények workshoponként
+         ]);
+    }
 
 }catch (mysqli_sql_exception $e){
     error_log("Database Error in initiate-event-invitations.php: (" . $e->getCode() . ") " . $e->getMessage());
