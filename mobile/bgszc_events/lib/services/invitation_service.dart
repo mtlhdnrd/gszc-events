@@ -68,7 +68,7 @@ class InvitationService {
       },
       body: jsonEncode({
         'invitationId': invitationId,
-        'status': status,
+        'newStatus': status,
       }),
     );
 

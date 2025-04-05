@@ -8,7 +8,7 @@ header('Content-Type: application/json');
 
 // --- 1. Input Validation and Authentication ---
 
-$validationResult = validate_request("POST", ["invitationId", "newStatus"]); // Basic check
+$validationResult = validate_request("POST", array("invitationId", "newStatus")); // Basic check
 if ($validationResult !== true) {
     http_response_code(400); // Bad Request
     echo json_encode(["error" => "Missing required fields: invitationId, newStatus."]);

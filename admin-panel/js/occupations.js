@@ -124,6 +124,7 @@ $(document).ready(function() {
     $(document).on('workshopAdded', loadOccupations);
     $(document).on('workshopDeleted', loadOccupations);
     $(document).on('workshopUpdated', loadOccupations);
+    $(document).on('eventDeleted', loadEventsIntoSelect);
 
       $('#occupationsTable tbody').on('click', '.edit-button', handleEditOccupationClick);
     $('#occupationsTable tbody').on('click', '.cancel-button', handleCancelOccupationClick);

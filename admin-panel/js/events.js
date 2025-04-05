@@ -181,6 +181,7 @@ $(document).ready(function () {
                 url: `../backend/api/events/delete_event.php?event_id=${id}`,
                 success: function(data){
                     row.remove();
+                    $(document).trigger('eventDeleted');
                 },
                 error: function (xhr, status, error) {
                     console.error("Error fetching events:"+ error);

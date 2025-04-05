@@ -3,6 +3,42 @@ require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/backend/config.php";
 require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/backend/api_utils.php";
 
 define('INVITATION_COOLDOWN_DAYS', 30);
+
+function isOnCooldown($userId, $currentEventDate, $cooldownDays, $conn) {
+    // Calculate the start date of the cooldown period
+    $cooldownStartDate = date('Y-m-d', strtotime($currentEventDate . ' -' . $cooldownDays . ' days'));
+
+    // SQL query: Check if the user attended any event_workshop
+    // within the cooldown period (excluding the current event date itself).
+    $sqlCooldown = "SELECT 1
+                    FROM attendance_sheets AS att
+                    JOIN event_workshop AS ew_att ON att.event_workshop_id = ew_att.event_workshop_id
+                    JOIN events AS e_att ON ew_att.event_id = e_att.event_id
+                    WHERE att.user_id = ?
+                      AND e_att.date >= ?  -- Start of cooldown period
+                      AND e_att.date < ?   -- Before the current event
+                    LIMIT 1";
+
+    $stmtCooldown = $conn->prepare($sqlCooldown);
+    if (!$stmtCooldown) {
+        error_log("Cooldown check prepare failed for user {$userId}: " . $conn->error);
+        // Fail safe: assume cooldown to prevent potential over-invitation in case of error.
+        // Alternatively, could throw an Exception.
+        return true;
+    }
+    $stmtCooldown->bind_param("iss", $userId, $cooldownStartDate, $currentEventDate);
+    $stmtCooldown->execute();
+    $resultCooldown = $stmtCooldown->get_result();
+    $isOnCooldown = $resultCooldown->num_rows > 0;
+    $stmtCooldown->close();
+
+    if ($isOnCooldown) {
+         error_log("User {$userId} is on cooldown (participated between {$cooldownStartDate} and {$currentEventDate}).");
+    }
+
+    return $isOnCooldown;
+}
+
 function processWorkshopInvitations($eventWorkshopId, $conn)
 {
      // Structure to hold fetched data and processing results
