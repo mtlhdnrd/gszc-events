@@ -1,8 +1,7 @@
 <?php
-// get_student_invitation_by_id.php
 
-require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/config.php";
-require_once $_SERVER["DOCUMENT_ROOT"] . "/bgszc-events/backend/api_utils.php";
+require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/backend/config.php";
+require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/backend/api_utils.php";
 
 $userId = $_GET['userId'] ?? null;
 
@@ -28,11 +27,11 @@ if (validate_request("GET", array("userId")) && $userId !== null) { // Nem kell 
                 ew.max_workable_hours,
                 ew.number_of_mentors_required,
                 DATE_FORMAT(e.date, '%Y-%m-%d %H:%i') AS date
-              FROM student_invitations si
+              FROM participant_invitations si
               INNER JOIN event_workshop ew ON si.event_workshop_id = ew.event_workshop_id
               INNER JOIN events e ON ew.event_id = e.event_id
               INNER JOIN workshops w ON ew.workshop_id = w.workshop_id
-              INNER JOIN students s ON si.user_id = s.user_id
+              INNER JOIN participants s ON si.user_id = s.user_id
               WHERE si.user_id = ?"; 
 
     $stmt = $conn->prepare($query);

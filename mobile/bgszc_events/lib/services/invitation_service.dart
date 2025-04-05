@@ -8,9 +8,9 @@ class InvitationService {
   final AuthService _authService = AuthService();
 
   static const _getInvitationEndpoint =
-      '/student_invitations/get_student_invitation_by_id.php'; // GET - Aktuális meghívó
+      '/invitations/get_participant_invitation_by_id.php'; // GET - Aktuális meghívó
   static const _updateInvitationStatusEndpoint =
-      '/student_invitations/update_invitation_status.php'; // POST - Státusz frissítése
+      '/invitations/update_invitation_status.php'; // POST - Státusz frissítése
 
   Future<Invitation?> getInvitation() async {
     final token = await _authService.getToken();
@@ -61,19 +61,20 @@ class InvitationService {
     }
 
     final response = await http.post(
-      Uri.parse('${ApiConstants.baseUrl}$_updateInvitationStatusEndpoint'), 
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'invitationId': invitationId,
-        'status': status,
-      }),
-    );
+    Uri.parse('${ApiConstants.baseUrl}$_updateInvitationStatusEndpoint'),
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': 'Bearer $token',
+    },
+    body: {
+      'invitationId': invitationId.toString(),
+      'newStatus': status,
+    },
+  );
 
     if (response.statusCode != 200) {
       throw Exception('Failed to update invitation status: ${response.statusCode}, ${response.body}');
     }
+    print('Update successful: ${response.body}');
   }
 }
