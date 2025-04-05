@@ -61,19 +61,20 @@ class InvitationService {
     }
 
     final response = await http.post(
-      Uri.parse('${ApiConstants.baseUrl}$_updateInvitationStatusEndpoint'), 
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'invitationId': invitationId,
-        'newStatus': status,
-      }),
-    );
+    Uri.parse('${ApiConstants.baseUrl}$_updateInvitationStatusEndpoint'),
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': 'Bearer $token',
+    },
+    body: {
+      'invitationId': invitationId.toString(),
+      'newStatus': status,
+    },
+  );
 
     if (response.statusCode != 200) {
       throw Exception('Failed to update invitation status: ${response.statusCode}, ${response.body}');
     }
+    print('Update successful: ${response.body}');
   }
 }

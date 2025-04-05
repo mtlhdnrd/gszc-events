@@ -35,7 +35,10 @@ $conn->begin_transaction();
 try {
     // --- 2. Authorization & Fetching Event Workshop ID ---
 
-    $sqlGetInvitation = "SELECT user_id, event_workshop_id, status FROM participant_invitations WHERE invitation_id = ? FOR UPDATE";
+    $sqlGetInvitation = "SELECT pi.user_id, pi.event_workshop_id, pi.status, ew.event_id
+                         FROM participant_invitations AS pi
+                         JOIN event_workshop AS ew ON pi.event_workshop_id = ew.event_workshop_id
+                         WHERE pi.invitation_id = ? FOR UPDATE";
     $stmtGet = $conn->prepare($sqlGetInvitation);
     if (!$stmtGet) throw new Exception("Prepare failed (get invitation): " . $conn->error);
 
@@ -56,6 +59,7 @@ try {
 
     $recipientUserId = (int)$invitationData['user_id'];
     $eventWorkshopId = (int)$invitationData['event_workshop_id'];
+    $eventId = (int)$invitationData['event_id'];
     $currentStatus = $invitationData['status'];
 
     // --- !!! IMPORTANT: Add Authentication Check Here !!! ---
@@ -105,8 +109,22 @@ try {
          error_log("Triggered processing completed for event_workshop_id {$eventWorkshopId}. Newly invited S:{$processingResult['newly_invited_students']}, T:{$processingResult['newly_invited_teachers']}");
     }
 
+    // --- 5. Check and Update Overall Event Status ---
+    // This check runs *only if* the status was updated to 'accepted'
+    // because only an acceptance can potentially make the event ready.
+    if ($newStatus === 'accepted') {
+        // Call the new function to check the overall event readiness
+        $eventStatusUpdated = checkAndUpdateEventStatus($eventId, $conn); // Pass the event ID
+        if ($eventStatusUpdated) {
+            //TODO: Send email to admin/operator
+            error_log("Overall event status for event ID {$eventId} was updated to 'ready' after invitation acceptance.");
+            // You might want to do something else here, like send a notification to the admin.
+        } else {
+             error_log("Overall event status check completed for event ID {$eventId}, no status change to 'ready' occurred.");
+        }
+    }
 
-    // --- 5. Send Response to Mobile App ---
+    // --- 6. Send Response to Mobile App ---
     http_response_code(200); // OK
     echo json_encode([
         "message" => "Invitation status updated successfully to '{$newStatus}'.",

@@ -340,3 +340,171 @@ function processWorkshopInvitations($eventWorkshopId, $conn)
          return ['error' => 'General error during processing', 'details' => $e->getMessage()];
     }
 }
+
+function checkAndUpdateEventStatus($eventId, $conn) {
+
+    /**
+ * Checks if all workshops associated with a given event have met their
+ * required number of accepted participants (students and teachers).
+ * If all workshops are ready, it updates the event's status to 'ready'.
+ * @return bool True if the event status was successfully updated to 'ready', false otherwise.
+ */
+    error_log("Checking overall readiness for event ID: {$eventId}");
+
+    // Start transaction for the check-and-update operation
+    $conn->begin_transaction();
+
+    try {
+        // --- Step 1: Check current event status and lock the row ---
+        // Prevents race conditions if multiple processes check simultaneously.
+        $sqlGetEventStatus = "SELECT status FROM events WHERE event_id = ? FOR UPDATE";
+        $stmtGetStatus = $conn->prepare($sqlGetEventStatus);
+        if (!$stmtGetStatus) throw new Exception("Prepare failed (get event status): " . $conn->error);
+
+        $stmtGetStatus->bind_param("i", $eventId);
+        $stmtGetStatus->execute();
+        $resultStatus = $stmtGetStatus->get_result();
+
+        if ($resultStatus->num_rows === 0) {
+            $stmtGetStatus->close();
+            throw new Exception("Event with ID {$eventId} not found during status check.");
+        }
+        $eventData = $resultStatus->fetch_assoc();
+        $currentEventStatus = $eventData['status'];
+        $stmtGetStatus->close();
+
+        // If event is already 'ready' or in another final state, do nothing.
+        if ($currentEventStatus === 'ready' || $currentEventStatus === 'completed' || $currentEventStatus === 'cancelled') {
+            error_log("Event {$eventId} is already in status '{$currentEventStatus}'. No update needed.");
+            $conn->commit(); // Commit transaction (no changes made)
+            return false; // Not updated in this run
+        }
+
+        // --- Step 2: Get all workshops for the event and their requirements ---
+        $sqlGetWorkshops = "SELECT
+                                event_workshop_id,
+                                number_of_mentors_required,
+                                number_of_teachers_required,
+                                busyness
+                            FROM event_workshop
+                            WHERE event_id = ?";
+        $stmtGetWorkshops = $conn->prepare($sqlGetWorkshops);
+        if (!$stmtGetWorkshops) throw new Exception("Prepare failed (get workshops for event): " . $conn->error);
+
+        $stmtGetWorkshops->bind_param("i", $eventId);
+        $stmtGetWorkshops->execute();
+        $resultWorkshops = $stmtGetWorkshops->get_result();
+
+        $workshops = [];
+        while ($row = $resultWorkshops->fetch_assoc()) {
+            $workshops[] = $row;
+        }
+        $stmtGetWorkshops->close();
+
+        // If the event has no workshops, it cannot become 'ready' based on participants.
+        if (empty($workshops)) {
+            error_log("Event {$eventId} has no associated workshops. Cannot determine participant readiness.");
+            $conn->commit(); // Commit transaction (no changes made)
+            return false;
+        }
+
+        // --- Step 3: Check readiness for EACH workshop ---
+        $allWorkshopsReady = true; // Assume readiness initially
+
+        // Prepare statement for counting accepted participants (reused in loop)
+        $sqlCountAccepted = "SELECT p.type, COUNT(pi.invitation_id) as accepted_count
+                             FROM participant_invitations pi
+                             JOIN participants p ON pi.user_id = p.user_id
+                             WHERE pi.event_workshop_id = ? AND pi.status = 'accepted'
+                             GROUP BY p.type";
+        $stmtCountAccepted = $conn->prepare($sqlCountAccepted);
+        if (!$stmtCountAccepted) throw new Exception("Prepare failed (count accepted): " . $conn->error);
+
+
+        foreach ($workshops as $workshop) {
+            $eventWorkshopId = $workshop['event_workshop_id'];
+
+            // Calculate needed participants for *this* workshop 
+            $base_students_required = (int)$workshop['number_of_mentors_required'];
+            $base_teachers_required = (int)$workshop['number_of_teachers_required'];
+            $busyness = $workshop['busyness'] ?? 'high';
+
+            $needed_students = (strtolower($busyness) === 'low') ? (int)ceil($base_students_required * 0.5) : $base_students_required;
+            $needed_teachers = (strtolower($busyness) === 'low') ? (int)ceil($base_teachers_required * 0.5) : $base_teachers_required;
+
+            // If a workshop requires zero participants, consider it 'ready' for this check.
+             if ($needed_students <= 0 && $needed_teachers <= 0) {
+                 error_log("Workshop {$eventWorkshopId} requires 0 participants, considering ready.");
+                 continue; // Check next workshop
+             }
+
+            // Count currently accepted students and teachers for *this* workshop
+            $stmtCountAccepted->bind_param("i", $eventWorkshopId);
+            $stmtCountAccepted->execute();
+            $resultAccepted = $stmtCountAccepted->get_result();
+
+            $accepted_students = 0;
+            $accepted_teachers = 0;
+            while ($countRow = $resultAccepted->fetch_assoc()) {
+                if ($countRow['type'] === 'student') {
+                    $accepted_students = (int)$countRow['accepted_count'];
+                } elseif ($countRow['type'] === 'teacher') {
+                    $accepted_teachers = (int)$countRow['accepted_count'];
+                }
+            }
+
+            // Check if this workshop meets its requirements
+            $workshopIsReady = ($accepted_students >= $needed_students) && ($accepted_teachers >= $needed_teachers);
+
+            if (!$workshopIsReady) {
+                error_log("Workshop {$eventWorkshopId} for event {$eventId} is NOT ready. Needed S:{$needed_students}, T:{$needed_teachers}. Accepted S:{$accepted_students}, T:{$accepted_teachers}. Event cannot be set to 'ready'.");
+                $allWorkshopsReady = false;
+                break; // No need to check further workshops for this event
+            } else {
+                 error_log("Workshop {$eventWorkshopId} for event {$eventId} IS ready. Needed S:{$needed_students}, T:{$needed_teachers}. Accepted S:{$accepted_students}, T:{$accepted_teachers}.");
+            }
+        }
+        $stmtCountAccepted->close(); // Close the prepared statement after the loop
+
+
+        // --- Step 4: Update event status if all workshops are ready ---
+        if ($allWorkshopsReady) {
+            error_log("All workshops for event {$eventId} are ready. Updating event status to 'ready'.");
+            $sqlUpdateEvent = "UPDATE events SET status = 'ready' WHERE event_id = ? AND status != 'ready'"; // Double check status to be safe
+            $stmtUpdateEvent = $conn->prepare($sqlUpdateEvent);
+            if (!$stmtUpdateEvent) throw new Exception("Prepare failed (update event status): " . $conn->error);
+
+            $stmtUpdateEvent->bind_param("i", $eventId);
+            $successUpdate = $stmtUpdateEvent->execute();
+             if (!$successUpdate) {
+                 throw new Exception("Execute failed (update event status): " . $stmtUpdateEvent->error);
+             }
+
+            $affectedRows = $stmtUpdateEvent->affected_rows;
+            $stmtUpdateEvent->close();
+
+            if ($affectedRows > 0) {
+                error_log("Event {$eventId} status successfully updated to 'ready'.");
+                $conn->commit(); // Commit the transaction
+                return true; // Status was updated
+            } else {
+                error_log("Event {$eventId} status was not updated (possibly already 'ready' or condition changed).");
+                 $conn->commit(); // Commit transaction (no status update occurred but check was successful)
+                 return false; // Not updated in this run
+            }
+        } else {
+            // If not all workshops are ready, just commit the transaction (as only SELECTs and potentially the event lock occurred)
+            $conn->commit();
+            return false; // Not updated
+        }
+
+    } catch (mysqli_sql_exception $e) {
+        $conn->rollback(); // Rollback on DB error
+        error_log("Database Error in checkAndUpdateEventStatus for event {$eventId}: (" . $e->getCode() . ") " . $e->getMessage());
+        return false; // Indicate failure
+    } catch (Exception $e) {
+        $conn->rollback(); // Rollback on general error
+        error_log("General Error in checkAndUpdateEventStatus for event {$eventId}: " . $e->getMessage());
+        return false; // Indicate failure
+    }
+}
