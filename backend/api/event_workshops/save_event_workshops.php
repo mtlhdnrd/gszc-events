@@ -63,7 +63,7 @@ try {
             $new_event_workshop_id = $stmt->insert_id;
             if ($new_event_workshop_id > 0) {
                  // Call the helper function to populate rankings for this new entry
-                 populateStudentRankings($new_event_workshop_id, $workshop_id, $conn);
+                 populateMentorRankings($new_event_workshop_id, $workshop_id, $conn);
             } else {
                 error_log("Could not get insert_id after inserting event_workshop for event {$event_id}, workshop {$workshop_id}");
             }

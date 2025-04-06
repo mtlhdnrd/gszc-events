@@ -50,7 +50,7 @@ if (validate_request("POST", array("name", "date", "location", "status"))) {
              // Get the ID of the event_workshop record just inserted
              $new_event_workshop_id = $insert_stmt->insert_id;
              if ($new_event_workshop_id > 0) {
-                  populateStudentRankings($new_event_workshop_id, $workshop_id, $conn);
+                  populateMentorRankings($new_event_workshop_id, $workshop_id, $conn);
              } else {
                  error_log("Could not get insert_id after inserting event_workshop for event {$event_id}, workshop {$workshop_id}");
              }

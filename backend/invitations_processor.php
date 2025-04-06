@@ -329,40 +329,51 @@ function processWorkshopInvitations($eventWorkshopId, $conn)
         $final_accepted_students = $fetchedData['accepted_students'];
         $final_accepted_teachers = $fetchedData['accepted_teachers'];
 
-        // Check student failure condition
-        if ($final_accepted_students < $needed_students && !$student_loop_broke_early) {
-            // This means we went through all eligible students (or there were none) and still didn't accept enough.
-            // AND the loop didn't stop because we hit the potential capacity limit.
-            if (empty($ranked_students) || $fetchedData['skipped_already_invited_students'] + $fetchedData['skipped_cooldown_students'] + $fetchedData['newly_invited_students'] == count($ranked_students) - $final_accepted_students - $fetchedData['pending_students']) {
-                // Check if we genuinely ran out of people to even *try* inviting.
-                $is_failed = true;
-                $failure_reason['failed_students'] = true;
-                error_log("processWorkshopInvitations({$eventWorkshopId}): Failure condition met for students. Accepted: {$final_accepted_students} < Needed: {$needed_students}. Loop finished naturally or no candidates.");
-            }
-        }
+        $is_ready = ($final_accepted_students >= $needed_students && $final_accepted_teachers >= $needed_teachers);
 
-        // Check teacher failure condition
-        if ($final_accepted_teachers < $needed_teachers && !$teacher_loop_broke_early) {
-            if (empty($ranked_teachers) || $fetchedData['skipped_already_invited_teachers'] + $fetchedData['skipped_cooldown_teachers'] + $fetchedData['newly_invited_teachers'] == count($ranked_teachers) - $final_accepted_teachers - $fetchedData['pending_teachers']) {
-                $is_failed = true;
-                $failure_reason['failed_teachers'] = true;
-                error_log("processWorkshopInvitations({$eventWorkshopId}): Failure condition met for teachers. Accepted: {$final_accepted_teachers} < Needed: {$needed_teachers}. Loop finished naturally or no candidates.");
-            }
-        }
-
-        // Determine the final status based on checks
-        if ($is_failed) {
-            $fetchedData['final_ew_status'] = 'failed';
-        } elseif ($final_accepted_students >= $needed_students && $final_accepted_teachers >= $needed_teachers) {
-            // If target is met by accepted counts now (or was already met)
+        if ($is_ready) {
+            // --- STATE: READY ---
             $fetchedData['final_ew_status'] = 'ready';
-        } elseif ($fetchedData['newly_invited_students'] > 0 || $fetchedData['newly_invited_teachers'] > 0) {
-            // If new invites were sent and not failed/ready, it's actively inviting
-            $fetchedData['final_ew_status'] = 'inviting';
+            error_log("processWorkshopInvitations({$eventWorkshopId}): Condition met for 'ready'. Accepted S:{$final_accepted_students}/{$needed_students}, T:{$final_accepted_teachers}/{$needed_teachers}.");
+            $fetchedData['failure_details'] = null;
+
         } else {
-            // No new invites, not ready, not failed -> keep initial status (e.g., 'pending')
-            $fetchedData['final_ew_status'] = $initial_ew_status;
-        }
+            // --- STATE: NOT READY - Check for Failed, Inviting, or Pending ---
+            error_log("processWorkshopInvitations({$eventWorkshopId}): Workshop is NOT ready based on accepted counts. Needed S:{$needed_students}, T:{$needed_teachers}. Accepted S:{$final_accepted_students}, T:{$final_accepted_teachers}. Checking state...");
+
+            // Check if there are outstanding invitations OR if new ones were just sent
+            $has_pending_invites = ($fetchedData['pending_students'] > 0 || $fetchedData['pending_teachers'] > 0);
+            $sent_new_invites_this_run = ($fetchedData['newly_invited_students'] > 0 || $fetchedData['newly_invited_teachers'] > 0);
+
+            if ($has_pending_invites || $sent_new_invites_this_run) {
+                // --- STATE: INVITING ---
+                // If there are pending invites OR we just sent new ones, the process is ongoing.
+                $fetchedData['final_ew_status'] = 'inviting';
+                $fetchedData['failure_details'] = null;
+                error_log("processWorkshopInvitations({$eventWorkshopId}): Status set to 'inviting'. Pending S:{$fetchedData['pending_students']}, T:{$fetchedData['pending_teachers']}. Newly sent S:{$fetchedData['newly_invited_students']}, T:{$fetchedData['newly_invited_teachers']}");
+
+            } else {
+                // --- STATE: POTENTIALLY FAILED ---
+                // Not ready, no pending invites, and no new invites were sent *in this specific run*.
+                // This is the only scenario where it can be considered failed.
+                $fetchedData['final_ew_status'] = 'failed';
+                $failure_reason = []; // Determine specific reason if needed for email
+                if ($needed_students > 0 && $final_accepted_students < $needed_students) $failure_reason['failed_students'] = true;
+                if ($needed_teachers > 0 && $final_accepted_teachers < $needed_teachers) $failure_reason['failed_teachers'] = true;
+
+                $fetchedData['failure_details'] = $failure_reason + [
+                    'event_name' => $fetchedData['ew_data']['event_name'],
+                    'event_date' => $fetchedData['ew_data']['event_date'],
+                    'workshop_name' => $fetchedData['ew_data']['workshop_name'],
+                    'needed_students' => $needed_students,
+                    'needed_teachers' => $needed_teachers,
+                    // Potentials are now just the accepted ones as nothing is pending/new
+                    'potential_students' => $final_accepted_students,
+                    'potential_teachers' => $final_accepted_teachers
+                ];
+                 error_log("processWorkshopInvitations({$eventWorkshopId}): Final status set to 'failed'. No pending invites and no new invites could be sent.");
+            }
+        } // End else (not ready)
 
 
         // --- Step 7: Update Event Workshop Status in DB if Changed ---
@@ -408,24 +419,24 @@ function processWorkshopInvitations($eventWorkshopId, $conn)
 
         // --- Send Email Notification AND Update Event Status AFTER Commit if Failed ---
         $eventStatusUpdatedToFailed = false; // Track if event status changed
-        if ($fetchedData['status_changed'] && $fetchedData['final_ew_status'] === 'failed') {
-            error_log("processWorkshopInvitations({$eventWorkshopId}): Triggering failure actions.");
-
-            // 1. Send Email Notification for the workshop
+        if ($fetchedData['final_ew_status'] === 'failed') {
+            error_log("processWorkshopInvitations({$eventWorkshopId}): Workshop determined as 'failed'. Triggering failure actions.");
+   
+            // 1. Send Email Notification for the workshop (only if details are available - implies it was processed this run)
             if ($fetchedData['failure_details'] !== null) {
                 sendFailureNotification($eventWorkshopId, $fetchedData['failure_details'], $conn);
+            } else {
+                 error_log("processWorkshopInvitations({$eventWorkshopId}): Workshop is 'failed', but no failure details generated in this run (likely already failed). Skipping email notification.");
             }
-
+   
             // 2. Attempt to set the Parent Event Status to 'failed'
-            $eventId = $fetchedData['ew_data']['event_id']; // Get event ID
+            $eventId = $fetchedData['ew_data']['event_id'] ?? null; // Use null coalescing just in case
             if ($eventId) {
-                // Ensure you require/load the file containing setEventStatusToFailed
-                require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/backend/event_status_utils.php"; // Example path
-                $eventStatusUpdatedToFailed = setEventStatusToFailed($eventId, $conn);
+               $eventStatusUpdatedToFailed = setEventStatusToFailed($eventId, $conn);
             } else {
                 error_log("Cannot update parent event status: Event ID not found in fetched data for ew_id {$eventWorkshopId}.");
             }
-        }
+       }
 
         // Return the full results data structure
         // Optionally add the event status update result if needed by the caller
@@ -638,7 +649,7 @@ function setEventStatusToFailed($eventId, $conn)
         $stmtGet->close();
 
         // Only update if not already in a final or failed state
-        if ($currentStatus === 'failed' || $currentStatus === 'completed' || $currentStatus === 'cancelled') {
+        if ($currentStatus === 'failed' || $currentStatus === 'ready') {
             error_log("Event {$eventId} already in status '{$currentStatus}'. No update to 'failed' performed.");
             $conn->commit(); // Nothing to change
             return false;

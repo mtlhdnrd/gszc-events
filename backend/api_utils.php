@@ -46,65 +46,88 @@ function validate_request_json($method, $required_params) {
 }
 
 /**
- * Populates the rankings table with all eligible students for a given event_workshop.
- * Students are considered eligible if they are of type 'student' and are associated
- * with the specific workshop type via the mentor_workshop table.
- * The ranking numbers are assigned sequentially starting from 1.
+* Populates the rankings table with all eligible mentors (students AND teachers)
+ * for a given event_workshop.
+ * Mentors are considered eligible if they match the type ('student' or 'teacher')
+ * and are associated with the specific workshop type via the mentor_workshop table.
+ * The ranking numbers are assigned sequentially starting from 1 *separately* for
+ * students and teachers within the same event_workshop.
  * IMPORTANT: This function assumes it's called within an active database transaction.
  */
-function populateStudentRankings($eventWorkshopId, $workshopId, $conn) {
+function populateMentorRankings($eventWorkshopId, $workshopId, $conn) {
     error_log("Attempting to populate rankings for event_workshop_id: {$eventWorkshopId}, workshop_id: {$workshopId}");
 
-    // 1. Find all eligible students for this specific workshop type
+    // --- Process STUDENTS ---
+    error_log("Processing STUDENT rankings for ew_id {$eventWorkshopId}, ws_id {$workshopId}");
+    // 1a. Find eligible STUDENTS
     $sqlFindStudents = "SELECT p.user_id
                         FROM participants p
                         JOIN mentor_workshop mw ON p.user_id = mw.user_id
                         WHERE p.type = 'student' AND mw.workshop_id = ?";
-
-    $stmtFind = $conn->prepare($sqlFindStudents);
-    if (!$stmtFind) {
-        throw new Exception("Prepare failed (find students for ranking): " . $conn->error);
-    }
-    $stmtFind->bind_param("i", $workshopId);
-    if (!$stmtFind->execute()) {
-        $stmtFind->close();
-        throw new Exception("Execute failed (find students for ranking): " . $stmtFind->error);
-    }
-
-    $resultStudents = $stmtFind->get_result();
+    $stmtFindStudents = $conn->prepare($sqlFindStudents);
+    if (!$stmtFindStudents) throw new Exception("Prepare failed (find students): " . $conn->error);
+    $stmtFindStudents->bind_param("i", $workshopId);
+    if (!$stmtFindStudents->execute()) { $stmtFindStudents->close(); throw new Exception("Execute failed (find students): " . $stmtFindStudents->error); }
+    $resultStudents = $stmtFindStudents->get_result();
     $studentIds = [];
-    while ($row = $resultStudents->fetch_assoc()) {
-        $studentIds[] = (int)$row['user_id'];
-    }
-    $stmtFind->close();
+    while ($row = $resultStudents->fetch_assoc()) { $studentIds[] = (int)$row['user_id']; }
+    $stmtFindStudents->close();
 
-    if (empty($studentIds)) {
-        error_log("No eligible students found for workshop_id {$workshopId}. No rankings added for event_workshop_id {$eventWorkshopId}.");
-        return; // Nothing to rank
-    }
+    // 2a. Prepare INSERT for student rankings
+    $sqlInsertStudentRanking = "INSERT INTO rankings (event_workshop_id, user_id, ranking_number, user_type)
+                                VALUES (?, ?, ?, 'student')";
+    $stmtInsertStudent = $conn->prepare($sqlInsertStudentRanking);
+    if (!$stmtInsertStudent) throw new Exception("Prepare failed (insert student ranking): " . $conn->error);
 
-    error_log("Found " . count($studentIds) . " eligible students for workshop {$workshopId}. Adding rankings for ew_id {$eventWorkshopId}.");
-
-    // 2. Prepare the INSERT statement for rankings
-    $sqlInsertRanking = "INSERT INTO rankings (event_workshop_id, user_id, ranking_number, user_type)
-                         VALUES (?, ?, ?, 'student')";
-    $stmtInsert = $conn->prepare($sqlInsertRanking);
-    if (!$stmtInsert) {
-        throw new Exception("Prepare failed (insert ranking): " . $conn->error);
-    }
-
-    // 3. Insert rankings sequentially
-    $rankingNumber = 1;
-    foreach ($studentIds as $studentId) {
-        $stmtInsert->bind_param("iii", $eventWorkshopId, $studentId, $rankingNumber);
-        if (!$stmtInsert->execute()) {
-            // Don't close statement here, let the main catch block handle rollback
-            throw new Exception("Execute failed (insert ranking for user {$studentId}): " . $stmtInsert->error);
+    // 3a. Insert student rankings sequentially
+    if (!empty($studentIds)) {
+        error_log("Found " . count($studentIds) . " eligible students. Adding rankings...");
+        $rankingNumber = 1;
+        foreach ($studentIds as $studentId) {
+            $stmtInsertStudent->bind_param("iii", $eventWorkshopId, $studentId, $rankingNumber);
+            if (!$stmtInsertStudent->execute()) throw new Exception("Execute failed (insert student ranking for user {$studentId}): " . $stmtInsertStudent->error);
+            $rankingNumber++;
         }
-        $rankingNumber++;
+    } else {
+        error_log("No eligible students found.");
     }
+    $stmtInsertStudent->close();
 
-    // 4. Close the insert statement
-    $stmtInsert->close();
-    error_log("Successfully populated rankings for event_workshop_id: {$eventWorkshopId}.");
+    // --- Process TEACHERS ---
+     error_log("Processing TEACHER rankings for ew_id {$eventWorkshopId}, ws_id {$workshopId}");
+    // 1b. Find eligible TEACHERS
+    $sqlFindTeachers = "SELECT p.user_id
+                        FROM participants p
+                        JOIN mentor_workshop mw ON p.user_id = mw.user_id
+                        WHERE p.type = 'teacher' AND mw.workshop_id = ?"; // Changed type to 'teacher'
+    $stmtFindTeachers = $conn->prepare($sqlFindTeachers);
+     if (!$stmtFindTeachers) throw new Exception("Prepare failed (find teachers): " . $conn->error);
+    $stmtFindTeachers->bind_param("i", $workshopId);
+     if (!$stmtFindTeachers->execute()) { $stmtFindTeachers->close(); throw new Exception("Execute failed (find teachers): " . $stmtFindTeachers->error); }
+    $resultTeachers = $stmtFindTeachers->get_result();
+    $teacherIds = [];
+    while ($row = $resultTeachers->fetch_assoc()) { $teacherIds[] = (int)$row['user_id']; }
+    $stmtFindTeachers->close();
+
+    // 2b. Prepare INSERT for teacher rankings
+    $sqlInsertTeacherRanking = "INSERT INTO rankings (event_workshop_id, user_id, ranking_number, user_type)
+                                VALUES (?, ?, ?, 'teacher')"; // Changed type to 'teacher'
+    $stmtInsertTeacher = $conn->prepare($sqlInsertTeacherRanking);
+     if (!$stmtInsertTeacher) throw new Exception("Prepare failed (insert teacher ranking): " . $conn->error);
+
+    // 3b. Insert teacher rankings sequentially (starting from 1 again)
+    if (!empty($teacherIds)) {
+        error_log("Found " . count($teacherIds) . " eligible teachers. Adding rankings...");
+        $rankingNumber = 1; // Reset ranking number for teachers
+        foreach ($teacherIds as $teacherId) {
+            $stmtInsertTeacher->bind_param("iii", $eventWorkshopId, $teacherId, $rankingNumber);
+            if (!$stmtInsertTeacher->execute()) throw new Exception("Execute failed (insert teacher ranking for user {$teacherId}): " . $stmtInsertTeacher->error);
+            $rankingNumber++;
+        }
+    } else {
+        error_log("No eligible teachers found.");
+    }
+    $stmtInsertTeacher->close();
+
+    error_log("Successfully finished populating mentor rankings for event_workshop_id: {$eventWorkshopId}.");
 }
