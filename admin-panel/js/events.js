@@ -74,10 +74,25 @@ $(document).ready(function () {
     setupEventDelegation();
 
     function SendInvitationsByEvent(eventId) {
-        // TODO: Make api call for sending invitatins --> here starts the cooking
         $.ajax({
             type: "POST",
             url: "../backend/api/invitations/initiate_event_invitations.php",
+            dataType: "json",
+            data: {eventId: eventId},
+            success: function(data, textStatus, xhr){
+                console.log(data);
+            },
+            error: function (xhr, status, error) {
+                console.error("Error initiating event invitations:", error);
+                alert("Hiba történt a meghívók kiküldésekor, kérjük póbálja később");
+            }
+        });
+    }
+    function ReSendInvitationsByEvent(eventId){
+        alert("Resending invitations for event: "+eventId);
+        $.ajax({
+            type: "POST",
+            url: "../backend/api/invitations/retry_event_invitations.php",
             dataType: "json",
             data: {eventId: eventId},
             success: function(data, textStatus, xhr){
@@ -312,6 +327,25 @@ $(document).ready(function () {
                 return;
              }
         }
+        if(status === 'failed')
+        {
+            //Add re-invite button
+            const actionsCell = row.find('td.actions-cell');
+            const buttonId = `reinvite-event-btn-${eventId}`;
+            const reinviteButtonSelector = `#${buttonId}`;
+            let deleteButton = actionsCell.find('.delete-button');
+            const existingReInviteButton = actionsCell.find(reinviteButtonSelector);
+            if (existingReInviteButton.length === 0) {
+                let inviteButton = $(`<button class="btn btn-warning btn-sm reinvite-button ms-1" id="${buttonId}">Meghívók újraküldése</button>`);
+                 let deleteButton = actionsCell.find('.delete-button');
+                 if (deleteButton.length > 0) {
+                     deleteButton.after(inviteButton);
+                 } else {
+                     // Fallback: append to the end if delete button wasn't found
+                     actionsCell.append(inviteButton);
+                 }
+            }
+        }
 
         const actionsCell = row.find('td.actions-cell');
         const buttonId = `invite-event-btn-${eventId}`; // Unique ID for the button in this row
@@ -411,6 +445,19 @@ $(document).ready(function () {
 
             // Call the dedicated function
             SendInvitationsByEvent(eventId);
+        });
+        tableBody.on('click', '.reinvite-button', function() {
+            const row = $(this).closest('tr');
+            const eventId = parseInt(row.find('.event-id').text(), 10);
+
+            if (isNaN(eventId)) {
+                console.error("Could not get event ID for sending invitations from row:", row);
+                alert("Hiba: Esemény azonosító nem található a meghívók küldéséhez.");
+                return;
+            }
+
+            // Call the dedicated function
+            ReSendInvitationsByEvent(eventId);
         });
     }
     return {

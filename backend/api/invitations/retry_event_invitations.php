@@ -1,6 +1,4 @@
 <?php
-// retry_event_invitations.php
-
 require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/backend/config.php";
 require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/backend/api_utils.php";
 require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/backend/notifications_handler.php";
