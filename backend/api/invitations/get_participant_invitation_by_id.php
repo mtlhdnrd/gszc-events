@@ -32,7 +32,7 @@ if (validate_request("GET", array("userId")) && $userId !== null) { // Nem kell 
               INNER JOIN events e ON ew.event_id = e.event_id
               INNER JOIN workshops w ON ew.workshop_id = w.workshop_id
               INNER JOIN participants s ON si.user_id = s.user_id
-              WHERE si.user_id = ?"; 
+              WHERE si.user_id = ? AND si.status = 'pending'"; 
 
     $stmt = $conn->prepare($query);
     $stmt->bind_param("i", $userId); // "i" - integer

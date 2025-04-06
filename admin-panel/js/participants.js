@@ -226,6 +226,7 @@ $(document).ready(function() {
     $(document).on('participantDeleted', loadMentorsIntoSelect);
     $(document).on('workshopDeleted', loadOccupationsIntoSelect);
     $(document).on('workshopUpdated', loadOccupationsIntoSelect);
+    $(document).on('eventAdded', loadNewEventRankings);
     // --- Button Clicks ---
     $('#showStudentsBtn').click(function() {
         currentParticipantType = 'student';
@@ -665,3 +666,8 @@ $('#saveEditedParticipantBtn').click(function() {
         loadMentorsIntoSelect();
     }
 });
+
+function loadNewEventRankings(newEvent)
+{
+    //TODO: Load all the students workshops into the rankings table
+}
