@@ -250,6 +250,7 @@ $(document).ready(function () {
     // --- Initial Load ---
     loadRankingEvents();
 
+    $(document).on('eventAdded', loadRankingEvents);
     // --- Event Handlers ---
 
     // Student/Teacher Toggle

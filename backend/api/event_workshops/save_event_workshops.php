@@ -58,6 +58,15 @@ try {
             if (!$stmt->execute()) {
                 throw new Exception("Insert failed: " . $stmt->error);
             }
+
+            // Get the ID of the event_workshop record just inserted
+            $new_event_workshop_id = $stmt->insert_id;
+            if ($new_event_workshop_id > 0) {
+                 // Call the helper function to populate rankings for this new entry
+                 populateMentorRankings($new_event_workshop_id, $workshop_id, $conn);
+            } else {
+                error_log("Could not get insert_id after inserting event_workshop for event {$event_id}, workshop {$workshop_id}");
+            }
         }
         $stmt->close();
     } // End if (!empty($occupations_data))
