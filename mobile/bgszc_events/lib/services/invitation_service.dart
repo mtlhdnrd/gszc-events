@@ -80,8 +80,7 @@ class InvitationService {
     }
   }
 
-  Future<Map<String, dynamic>> updateInvitationStatus(int invitationId, String status) async {
-    // Token is likely still needed for authentication/authorization on the update endpoint
+   Future<Invitation> updateInvitationStatus(int invitationId, String status) async {
     final token = await _authService.getToken();
     if (token == null) {
        print('InvitationService: No token for update.');
@@ -93,35 +92,48 @@ class InvitationService {
           Uri.parse('${ApiConstants.baseUrl}$_updateInvitationStatusEndpoint'),
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            // Send Authorization header for the update request
             'Authorization': 'Bearer $token',
           },
           body: {
             'invitationId': invitationId.toString(),
             'newStatus': status,
-            // No need to send userId here, backend gets it from invitationId
           },
         );
 
         if (response.statusCode == 200) {
-            print('Update successful: ${response.body}');
-            try {
-                 final Map<String, dynamic> responseData = jsonDecode(response.body);
-                 return responseData;
-            } catch (e) {
-                 print("Could not decode update response: ${response.body}");
-                 return {"message": "Status updated, but response format unexpected."};
+            final dynamic responseData = jsonDecode(response.body);
+
+            // Check if the backend returned the full invitation object
+            if (responseData != null && responseData is Map<String, dynamic> && responseData.containsKey('invitation_id')) {
+                 print('Update successful, received updated invitation data.');
+                 // Parse and return the Invitation object
+                 return Invitation.fromJson(responseData);
+            } else {
+                 // Backend sent a generic message or fetch failed after update
+                 print('Update likely successful, but full invitation data not returned. Response: ${response.body}');
+                 // We MUST return an Invitation. What do we do?
+                 // Option A: Throw an error, forcing the caller to handle the refresh.
+                 // Option B: Try calling getInvitation() immediately (might cause infinite loop if getInvitation fails?) - Risky
+                 // Option C: Return a dummy/placeholder or the old one? - Misleading
+                 // Let's throw an error indicating manual refresh might be needed.
+                 throw Exception('Status updated, but failed to retrieve updated details. Please refresh.');
             }
         } else if (response.statusCode == 401) {
+            // ... (handle 401 as before) ...
             print('InvitationService: Unauthorized (401) during update.');
             await _authService.logout();
             throw Exception('Authorization failed during update.');
         } else {
+           // ... (handle other errors as before) ...
            print('InvitationService: Failed to update status. Status: ${response.statusCode}, Body: ${response.body}');
            throw Exception('Failed to update invitation status: ${response.statusCode}');
         }
     } catch (e) {
         print('InvitationService: Exception during updateInvitationStatus: $e');
+        // Rethrow the specific exception if it came from the block above
+        if (e is Exception && e.toString().contains('Status updated, but failed')) {
+            rethrow;
+        }
         throw Exception('Failed to update status: $e');
     }
   }

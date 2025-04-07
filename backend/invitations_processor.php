@@ -2,45 +2,91 @@
 require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/backend/config.php";
 require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/backend/api_utils.php";
 
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
+
+require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/lib/PHPMailer/src/Exception.php";
+require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/lib/PHPMailer/src/PHPMailer.php";
+require_once $_SERVER["DOCUMENT_ROOT"] . "/gszc-events/lib/PHPMailer/src/SMTP.php";
+
+
 define('INVITATION_COOLDOWN_DAYS', 30);
 
-function sendFailureNotification($eventWorkshopId, $failureDetails, $conn)
+function sendFailureNotification($eventWorkshopId, $failureDetails) // Removed $conn as it wasn't used inside
 {
+    // Check if OPERATOR_EMAIL is defined and not empty
     if (!defined('OPERATOR_EMAIL') || empty(OPERATOR_EMAIL)) {
         error_log("OPERATOR_EMAIL not defined. Cannot send failure notification for event_workshop_id: {$eventWorkshopId}.");
-        return;
+        return false; // Return false indicate failure
     }
 
-    $to = OPERATOR_EMAIL;
+    // --- Construct message details ---
+    $to = OPERATOR_EMAIL; // Use the defined constant
     $subject = "Figyelmeztetés: Probléma a mentorok toborzásával - Foglalkozás ID: " . $eventWorkshopId;
 
-    $message = "Tisztelt Operátor!\n\n";
-    $message .= "A rendszer nem tudott elegendő mentort találni a következő esemény foglalkozásához:\n\n";
-    $message .= "Esemény neve: " . ($failureDetails['event_name'] ?? 'N/A') . "\n";
-    $message .= "Esemény dátuma: " . ($failureDetails['event_date'] ?? 'N/A') . "\n";
-    $message .= "Foglalkozás neve: " . ($failureDetails['workshop_name'] ?? 'N/A') . "\n";
-    $message .= "Foglalkozás ID (event_workshop_id): " . $eventWorkshopId . "\n\n";
-    $message .= "Részletek:\n";
+    $messageBody = "Tisztelt Operátor!\n\n";
+    $messageBody .= "A rendszer nem tudott elegendő mentort találni a következő esemény foglalkozásához:\n\n";
+    $messageBody .= "Esemény neve: " . ($failureDetails['event_name'] ?? 'N/A') . "\n";
+    $messageBody .= "Esemény dátuma: " . ($failureDetails['event_date'] ?? 'N/A') . "\n";
+    $messageBody .= "Foglalkozás neve: " . ($failureDetails['workshop_name'] ?? 'N/A') . "\n";
+    $messageBody .= "Foglalkozás ID (event_workshop_id): " . $eventWorkshopId . "\n\n";
+    $messageBody .= "Részletek:\n";
     if (isset($failureDetails['failed_students'])) {
-        $message .= "- Diák mentorok: Szükséges: {$failureDetails['needed_students']}, Elérhető (elfogadott+függő+új): {$failureDetails['potential_students']}\n";
+        $messageBody .= "- Diák mentorok: Szükséges: {$failureDetails['needed_students']}, Elérhető (elfogadott+függő+új): {$failureDetails['potential_students']}\n";
     }
     if (isset($failureDetails['failed_teachers'])) {
-        $message .= "- Tanár mentorok: Szükséges: {$failureDetails['needed_teachers']}, Elérhető (elfogadott+függő+új): {$failureDetails['potential_teachers']}\n";
+        $messageBody .= "- Tanár mentorok: Szükséges: {$failureDetails['needed_teachers']}, Elérhető (elfogadott+függő+új): {$failureDetails['potential_teachers']}\n";
     }
-    $message .= "\nKérjük, ellenőrizze a rangsort és a résztvevőket az admin felületen.\n";
-    $message .= "\nÜdvözlettel,\nA Foglalkozáskezelő Rendszer";
+    $messageBody .= "\nKérjük, ellenőrizze a rangsort és a résztvevőket az admin felületen.\n";
+    $messageBody .= "\nÜdvözlettel,\nA Foglalkozáskezelő Rendszer";
+    // --- End of message construction ---
 
-    $headers = 'From: no-reply@' . ($_SERVER['HTTP_HOST'] ?? 'example.com') . "\r\n" .
-        'Reply-To: ' . OPERATOR_EMAIL . "\r\n" .
-        'X-Mailer: PHP/' . phpversion() . "\r\n" .
-        'Content-Type: text/plain; charset=utf-8';
 
-    if (/*mail($to, $subject, $message, $headers)*/true) {
-        error_log("Failure notification sent successfully for event_workshop_id: {$eventWorkshopId} to " . $to);
-    } else {
-        error_log("Failed to send failure notification email for event_workshop_id: {$eventWorkshopId} to " . $to);
+    // --- PHPMailer Implementation for Gmail ---
+    $mail = new PHPMailer(true); // Passing `true` enables exceptions
+
+    // Sender Credentials (Replace with your actual details)
+    $senderEmail    = 'girmany321@gmail.com';
+    $senderName     = 'GSZC'; 
+    $appPassword    = 'rnds xett momj lfrd';
+
+    try {
+        // Server settings for Gmail
+        // $mail->SMTPDebug = SMTP::DEBUG_SERVER;   // Enable verbose debug output if needed
+        $mail->isSMTP();                           // Send using SMTP
+        $mail->Host       = 'smtp.gmail.com';      // Gmail SMTP server
+        $mail->SMTPAuth   = true;                  // Enable SMTP authentication
+        $mail->Username   = $senderEmail;          // Your Gmail address (sending from)
+        $mail->Password   = $appPassword;          // Your App Password (NOT your regular password)
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // Use SSL
+        $mail->Port       = 465;                   // TCP port for SSL
+
+        // Character set
+        $mail->CharSet = 'UTF-8';
+
+        // Recipients
+        $mail->setFrom($senderEmail, $senderName); // From address MUST be the same as Username
+        $mail->addAddress($to);                    // Add the recipient (OPERATOR_EMAIL)
+        $mail->addReplyTo($senderEmail, $senderName); // Optional: Set reply-to address
+
+        // Content
+        $mail->isHTML(false); // Set email format to plain text
+        $mail->Subject = $subject;
+        $mail->Body    = $messageBody;
+
+        $mail->send();
+        error_log("Success: Failure notification sent via PHPMailer for event_workshop_id: {$eventWorkshopId} from {$senderEmail} to " . $to);
+        return true; // Indicate success
+
+    } catch (Exception $e) {
+        // Log the detailed error from PHPMailer
+        error_log("Error: Failed sending email via PHPMailer for event_workshop_id: {$eventWorkshopId}. From: {$senderEmail}, To: {$to}. Mailer Error: {$mail->ErrorInfo}");
+        return false; // Indicate failure
     }
+    // --- End of PHPMailer Implementation ---
 }
+
 function isOnCooldown($userId, $currentEventDate, $cooldownDays, $conn)
 {
     // Calculate the start date of the cooldown period
