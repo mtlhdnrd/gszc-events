@@ -73,13 +73,6 @@ class _InvitationCardState extends State<InvitationCard> {
       // Opcionális: Értesítjük a szülőt is, hogy történt valami
       widget.onRefresh?.call(); // Csak ha a szülőnek is kell tudnia
 
-      // Opcionális: Visszajelzés a felhasználónak
-      if (mounted) { // Ellenőrizzük, hogy a widget még a fán van-e
-           ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(content: Text('Meghívó státusza frissítve: ${updatedInvitation.status}')),
-           );
-      }
-
     } catch (e) {
       // Hiba kezelése
       setState(() {
