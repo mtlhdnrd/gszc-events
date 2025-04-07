@@ -75,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return Center(child: Text('Nincs aktív meghívó.'));
     } else {
       return InvitationCard(
-        invitation: _invitation!,
+        initialInvitation: _invitation!,
         onRefresh:
             _loadData, // Amikor elfogad/elutasít, a tesztadatokat töltjük be újra
       );
